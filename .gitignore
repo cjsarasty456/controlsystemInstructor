@@ -1,0 +1,67 @@
+# === Credenciales y secretos ===
+.env
+.env.*
+*.env
+.env.local
+.env.production
+credentials.json
+secrets.json
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+keystore.properties
+application-local.properties
+application-local.yml
+
+# === Node.js ===
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+dist/
+build/
+.cache/
+
+# === Java / Maven / Gradle ===
+target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+.mvn/wrapper/maven-wrapper.jar
+.gradle/
+build/
+out/
+
+# === IDEs ===
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.settings/
+*.iml
+.factorypath
+nbproject/
+
+# === Sistema operativo ===
+.DS_Store
+Thumbs.db
+desktop.ini
+*.tmp
+*.bak
+
+# === Logs ===
+*.log
+logs/
+
+# === Archivos temporales ===
+tmp/
+temp/
