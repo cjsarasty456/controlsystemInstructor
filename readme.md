@@ -12,6 +12,14 @@ Sistema web diseñado para la gestión y control de instructores, permitiendo el
 | `back-end/` | Servidor, API y lógica del negocio |
 | `DB/` | Scripts y configuración de base de datos |
 
+## Funcionalidades
+
+- **Registro de trabajos:** Control y registro de las actividades y trabajos asignados a los aprendices.
+- **Gestión de evidencias:** Almacenamiento y administración de evidencias de aprendizaje (fotos, documentos, archivos).
+- **Llamado de asistencia:** Registro y control de la asistencia de los aprendices a las sesiones de formación.
+- **Control académico SENA:** Registro del control académico conforme a los lineamientos del Servicio Nacional de Aprendizaje (SENA).
+- **Reglamento del aprendiz:** Carga y consulta del reglamento del aprendiz como referencia obligatoria.
+
 ## Tecnologías
 
 - **Front-end:** Por definir
