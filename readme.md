@@ -22,9 +22,9 @@ Sistema web diseñado para la gestión y control de instructores, permitiendo el
 
 ## Tecnologías
 
-- **Front-end:** Por definir
-- **Back-end:** Por definir
-- **Base de datos:** Por definir
+- **Front-end:** React Native
+- **Back-end:** Spring Boot (Java)
+- **Base de datos:** PostgreSQL
 
 ## Instalación
 
