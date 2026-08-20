@@ -27,4 +27,4 @@ Sistema web diseñado para la gestión y control de instructores, permitiendo el
 2. Seguir las instrucciones de configuración en cada carpeta correspondiente.
 
 ## Autor
-cjsarasty456
+**Carlos Julio Cadena Sarasty** - cjsarasty@gmail.com
