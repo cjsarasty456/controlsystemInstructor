@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { getFaseForRapAndCompetencia, DEFAULT_ADSO_PROJECT } from '../services/projectReportService';
+import { parseSenaDateParts, formatSenaDate } from '../services/dateUtils';
 import UploadProjectReportModal from './UploadProjectReportModal';
 import EvaluadorReglamentoModal from './EvaluadorReglamentoModal';
 
@@ -32,6 +33,74 @@ export default function FichaDetailView({
   const [isProjectModalOpen, setIsProjectModalOpen] = useState(false);
   const [isReglamentoModalOpen, setIsReglamentoModalOpen] = useState(false);
   const [selectedLearnerForEvaluation, setSelectedLearnerForEvaluation] = useState(null);
+
+  // Estados de Ordenamiento y Búsqueda en Modal de Detalle por RAP
+  const [rapDetailSortField, setRapDetailSortField] = useState('nombre');
+  const [rapDetailSortOrder, setRapDetailSortOrder] = useState('asc'); // 'asc' | 'desc'
+  const [rapDetailSearchText, setRapDetailSearchText] = useState('');
+  const [rapDetailJuicioFilter, setRapDetailJuicioFilter] = useState('TODOS');
+
+  // Estados de Ordenamiento en Vista Detalle Fila por Fila
+  const [tablaSortField, setTablaSortField] = useState('numDoc');
+  const [tablaSortOrder, setTablaSortOrder] = useState('asc');
+
+  // Estados de Ordenamiento en Modal de RAPs del Aprendiz
+  const [learnerModalSortField, setLearnerModalSortField] = useState('rap');
+  const [learnerModalSortOrder, setLearnerModalSortOrder] = useState('asc');
+
+  // Manejadores de Ordenamiento por Columna
+  const handleSortRapDetail = (field) => {
+    if (rapDetailSortField === field) {
+      setRapDetailSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setRapDetailSortField(field);
+      setRapDetailSortOrder('asc');
+    }
+  };
+
+  const handleSortTabla = (field) => {
+    if (tablaSortField === field) {
+      setTablaSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setTablaSortField(field);
+      setTablaSortOrder('asc');
+    }
+  };
+
+  const handleSortLearnerModal = (field) => {
+    if (learnerModalSortField === field) {
+      setLearnerModalSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setLearnerModalSortField(field);
+      setLearnerModalSortOrder('asc');
+    }
+  };
+
+  // Renderizador estandarizado para campos de fecha de asentamiento / registro
+  const renderFechaAsentamiento = (fechaVal) => {
+    const { dateStr, timeStr } = parseSenaDateParts(fechaVal);
+    if (!dateStr) {
+      return (
+        <span style={{ color: 'var(--text-muted)', fontSize: '0.78rem', fontStyle: 'italic' }}>
+          Sin registrar
+        </span>
+      );
+    }
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.1rem' }}>
+        <span style={{ fontWeight: '600', color: 'var(--text-primary)', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+          <i className="ph ph-calendar" style={{ color: '#0284c7', fontSize: '0.9rem' }}></i>
+          {dateStr}
+        </span>
+        {timeStr && (
+          <small style={{ color: 'var(--text-muted)', fontSize: '0.72rem', paddingLeft: '1.25rem' }}>
+            <i className="ph ph-clock" style={{ marginRight: '0.2rem' }}></i>
+            {timeStr}
+          </small>
+        )}
+      </div>
+    );
+  };
 
   const [isDragging, setIsDragging] = useState(false);
 
@@ -189,6 +258,128 @@ export default function FichaDetailView({
       return true;
     });
   }, [juicios, aprendices, filterFase, filterCompetencia, filterRap, filterAprendiz, filterJuicio, activeProject]);
+
+  // Aprendices del RAP organizados y filtrados dinámicamente en el modal
+  const sortedModalLearners = useMemo(() => {
+    if (!selectedRapDetailModal?.aprendicesDetalle) return [];
+    
+    let list = [...selectedRapDetailModal.aprendicesDetalle];
+
+    // Filtro por Juicio dentro del modal
+    if (rapDetailJuicioFilter !== 'TODOS') {
+      list = list.filter(a => a.juicio === rapDetailJuicioFilter);
+    }
+
+    // Filtro de búsqueda rápida por documento, nombre o funcionario
+    if (rapDetailSearchText.trim()) {
+      const q = rapDetailSearchText.toLowerCase().trim();
+      list = list.filter(a => 
+        (a.nombre && a.nombre.toLowerCase().includes(q)) ||
+        (a.numDoc && String(a.numDoc).includes(q)) ||
+        (a.funcionario && a.funcionario.toLowerCase().includes(q))
+      );
+    }
+
+    // Ordenamiento por columna
+    list.sort((a, b) => {
+      const valA = a[rapDetailSortField] || '';
+      const valB = b[rapDetailSortField] || '';
+
+      if (rapDetailSortField === 'numDoc') {
+        const nA = Number(String(valA).replace(/\D/g, '')) || 0;
+        const nB = Number(String(valB).replace(/\D/g, '')) || 0;
+        return rapDetailSortOrder === 'asc' ? nA - nB : nB - nA;
+      }
+
+      if (rapDetailSortField === 'juicio') {
+        const priority = { 'APROBADO': 1, 'POR EVALUAR': 2, 'NO APROBADO': 3 };
+        const pA = priority[valA] || 99;
+        const pB = priority[valB] || 99;
+        if (pA !== pB) {
+          return rapDetailSortOrder === 'asc' ? pA - pB : pB - pA;
+        }
+      }
+
+      if (rapDetailSortField === 'fechaHora') {
+        const tA = parseSenaDateParts(valA).timestamp;
+        const tB = parseSenaDateParts(valB).timestamp;
+        return rapDetailSortOrder === 'asc' ? tA - tB : tB - tA;
+      }
+
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+      return rapDetailSortOrder === 'asc'
+        ? strA.localeCompare(strB, 'es')
+        : strB.localeCompare(strA, 'es');
+    });
+
+    return list;
+  }, [selectedRapDetailModal, rapDetailSortField, rapDetailSortOrder, rapDetailJuicioFilter, rapDetailSearchText]);
+
+  // Juicios de la tabla fila por fila organizados dinámicamente por columna
+  const sortedJuiciosTabla = useMemo(() => {
+    let list = [...filteredJuiciosTabla];
+    list.sort((a, b) => {
+      let valA = a[tablaSortField] || '';
+      let valB = b[tablaSortField] || '';
+
+      if (tablaSortField === 'fase') {
+        valA = getFaseForRapAndCompetencia(a.rap, a.competencia, activeProject);
+        valB = getFaseForRapAndCompetencia(b.rap, b.competencia, activeProject);
+      } else if (tablaSortField === 'numDoc') {
+        const nA = Number(String(valA).replace(/\D/g, '')) || 0;
+        const nB = Number(String(valB).replace(/\D/g, '')) || 0;
+        return tablaSortOrder === 'asc' ? nA - nB : nB - nA;
+      } else if (tablaSortField === 'juicio') {
+        const priority = { 'APROBADO': 1, 'POR EVALUAR': 2, 'NO APROBADO': 3 };
+        const pA = priority[valA] || 99;
+        const pB = priority[valB] || 99;
+        if (pA !== pB) return tablaSortOrder === 'asc' ? pA - pB : pB - pA;
+      } else if (tablaSortField === 'fechaHoraJuicio') {
+        const tA = parseSenaDateParts(valA).timestamp;
+        const tB = parseSenaDateParts(valB).timestamp;
+        return tablaSortOrder === 'asc' ? tA - tB : tB - tA;
+      }
+
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+      return tablaSortOrder === 'asc'
+        ? strA.localeCompare(strB, 'es')
+        : strB.localeCompare(strA, 'es');
+    });
+    return list;
+  }, [filteredJuiciosTabla, tablaSortField, tablaSortOrder, activeProject]);
+
+  // RAPs del modal de aprendiz organizados por columna
+  const sortedLearnerRaps = useMemo(() => {
+    if (!selectedLearnerModal?.raps) return [];
+    let list = [...selectedLearnerModal.raps];
+    list.sort((a, b) => {
+      let valA = a[learnerModalSortField] || '';
+      let valB = b[learnerModalSortField] || '';
+
+      if (learnerModalSortField === 'fase') {
+        valA = getFaseForRapAndCompetencia(a.rap, a.competencia, activeProject);
+        valB = getFaseForRapAndCompetencia(b.rap, b.competencia, activeProject);
+      } else if (learnerModalSortField === 'juicio') {
+        const priority = { 'APROBADO': 1, 'POR EVALUAR': 2, 'NO APROBADO': 3 };
+        const pA = priority[valA] || 99;
+        const pB = priority[valB] || 99;
+        if (pA !== pB) return learnerModalSortOrder === 'asc' ? pA - pB : pB - pA;
+      } else if (learnerModalSortField === 'fechaHora') {
+        const tA = parseSenaDateParts(valA).timestamp;
+        const tB = parseSenaDateParts(valB).timestamp;
+        return learnerModalSortOrder === 'asc' ? tA - tB : tB - tA;
+      }
+
+      const strA = String(valA).toLowerCase();
+      const strB = String(valB).toLowerCase();
+      return learnerModalSortOrder === 'asc'
+        ? strA.localeCompare(strB, 'es')
+        : strB.localeCompare(strA, 'es');
+    });
+    return list;
+  }, [selectedLearnerModal, learnerModalSortField, learnerModalSortOrder, activeProject]);
 
   // Métricas globales
   const globalAprobados = rapsMetrics.reduce((acc, r) => acc + r.aprobados, 0);
@@ -623,7 +814,13 @@ export default function FichaDetailView({
                         <button 
                           className="btn btn-secondary" 
                           style={{ padding: '0.35rem 0.8rem', fontSize: '0.78rem', whiteSpace: 'nowrap' }}
-                          onClick={() => setSelectedRapDetailModal(r)}
+                          onClick={() => {
+                            setRapDetailSearchText('');
+                            setRapDetailJuicioFilter('TODOS');
+                            setRapDetailSortField('nombre');
+                            setRapDetailSortOrder('asc');
+                            setSelectedRapDetailModal(r);
+                          }}
                         >
                           <i className="ph ph-users"></i> Ver {r.aprendicesDetalle.length} Aprendiz{r.aprendicesDetalle.length === 1 ? '' : 'es'}
                         </button>
@@ -710,31 +907,74 @@ export default function FichaDetailView({
           {subViewMode === 'tabla' && (
             <div className="table-container">
               <div className="table-header-info">
-                <h4><i className="ph ph-table"></i> Juicios Evaluativos Extraídos</h4>
+                <div>
+                  <h4><i className="ph ph-table"></i> Juicios Evaluativos Extraídos</h4>
+                  <small style={{ color: 'var(--text-secondary)' }}>Haz clic en los encabezados para organizar las filas por esa columna</small>
+                </div>
                 <span>Mostrando {filteredJuiciosTabla.length} de {juicios.length} registros</span>
               </div>
               <table className="data-table">
                 <thead>
                   <tr>
-                    <th>Fase</th>
-                    <th>Documento</th>
-                    <th>Aprendiz</th>
-                    <th>Competencia Laboral</th>
-                    <th>Resultado de Aprendizaje (RAP)</th>
-                    <th>Juicio</th>
-                    <th>Fecha Registro</th>
-                    <th>Funcionario</th>
+                    <th onClick={() => handleSortTabla('fase')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Fase">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Fase</span>
+                        <i className={`ph ${tablaSortField === 'fase' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'fase' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('numDoc')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Documento">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Documento</span>
+                        <i className={`ph ${tablaSortField === 'numDoc' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'numDoc' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('nombre')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Aprendiz">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Aprendiz</span>
+                        <i className={`ph ${tablaSortField === 'nombre' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'nombre' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('competencia')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Competencia">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Competencia Laboral</span>
+                        <i className={`ph ${tablaSortField === 'competencia' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'competencia' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('rap')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por RAP">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Resultado de Aprendizaje (RAP)</span>
+                        <i className={`ph ${tablaSortField === 'rap' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'rap' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('juicio')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Juicio">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Juicio</span>
+                        <i className={`ph ${tablaSortField === 'juicio' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'juicio' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('fechaHoraJuicio')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Fecha Registro">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Fecha Registro</span>
+                        <i className={`ph ${tablaSortField === 'fechaHoraJuicio' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'fechaHoraJuicio' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
+                    <th onClick={() => handleSortTabla('funcionario')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Funcionario">
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                        <span>Funcionario</span>
+                        <i className={`ph ${tablaSortField === 'funcionario' ? (tablaSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: tablaSortField === 'funcionario' ? 'var(--primary)' : 'var(--text-muted)' }} />
+                      </div>
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredJuiciosTabla.length === 0 ? (
+                  {sortedJuiciosTabla.length === 0 ? (
                     <tr>
                       <td colSpan="8" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
                         No hay juicios que coincidan con los filtros aplicados.
                       </td>
                     </tr>
                   ) : (
-                    filteredJuiciosTabla.slice(0, 100).map((j, i) => {
+                    sortedJuiciosTabla.slice(0, 100).map((j, i) => {
                       const fase = getFaseForRapAndCompetencia(j.rap, j.competencia, activeProject);
                       const badgeClass = j.juicio === 'APROBADO' ? 'aprobado' : (j.juicio === 'NO APROBADO' ? 'no-aprobado' : 'pendiente');
                       return (
@@ -745,7 +985,7 @@ export default function FichaDetailView({
                           <td style={{ maxWidth: '220px' }}><small>{j.competencia}</small></td>
                           <td style={{ maxWidth: '280px' }}><small>{j.rap}</small></td>
                           <td><span className={`judgment-badge ${badgeClass}`}>{j.juicio}</span></td>
-                          <td><small>{j.fechaHoraJuicio || '-'}</small></td>
+                          <td>{renderFechaAsentamiento(j.fechaHoraJuicio)}</td>
                           <td><small>{j.funcionario || 'SISTEMA'}</small></td>
                         </tr>
                       );
@@ -947,7 +1187,7 @@ export default function FichaDetailView({
         </div>
       )}
 
-      {/* MODAL 1: Desglose de Aprendices de un RAP específico */}
+      {/* MODAL 1: Desglose de Aprendices de un RAP específico con Ordenamiento por Columna y Formato de Fecha */}
       {selectedRapDetailModal && (
         <div className="modal-backdrop">
           <div className="modal-dialog modal-lg">
@@ -961,61 +1201,213 @@ export default function FichaDetailView({
               <button className="close-btn" onClick={() => setSelectedRapDetailModal(null)}><i className="ph ph-x"></i></button>
             </div>
             <div className="modal-body">
+              {/* Tarjetas de Estadísticas del RAP (Clicables para filtrar rápidamente) */}
               <div className="preview-stats-row" style={{ marginBottom: '1rem' }}>
-                <div className="preview-stat-card">
+                <div 
+                  className="preview-stat-card"
+                  onClick={() => setRapDetailJuicioFilter(prev => prev === 'APROBADO' ? 'TODOS' : 'APROBADO')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    border: rapDetailJuicioFilter === 'APROBADO' ? '2px solid #059669' : '1px solid var(--border)',
+                    background: rapDetailJuicioFilter === 'APROBADO' ? '#ecfdf5' : '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Clic para filtrar solo aprendices con juicio Aprobado"
+                >
                   <strong style={{ color: '#059669' }}>{selectedRapDetailModal.aprobados} ({selectedRapDetailModal.pctAprobado}%)</strong>
-                  <span>Aprobados</span>
+                  <span>Aprobados {rapDetailJuicioFilter === 'APROBADO' ? '✓' : ''}</span>
                 </div>
-                <div className="preview-stat-card">
+                <div 
+                  className="preview-stat-card"
+                  onClick={() => setRapDetailJuicioFilter(prev => prev === 'POR EVALUAR' ? 'TODOS' : 'POR EVALUAR')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    border: rapDetailJuicioFilter === 'POR EVALUAR' ? '2px solid #d97706' : '1px solid var(--border)',
+                    background: rapDetailJuicioFilter === 'POR EVALUAR' ? '#fffbeb' : '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Clic para filtrar solo aprendices con juicio Por Evaluar"
+                >
                   <strong style={{ color: '#d97706' }}>{selectedRapDetailModal.pendientes} ({selectedRapDetailModal.pctPendiente}%)</strong>
-                  <span>Por Evaluar</span>
+                  <span>Por Evaluar {rapDetailJuicioFilter === 'POR EVALUAR' ? '✓' : ''}</span>
                 </div>
-                <div className="preview-stat-card">
+                <div 
+                  className="preview-stat-card"
+                  onClick={() => setRapDetailJuicioFilter(prev => prev === 'NO APROBADO' ? 'TODOS' : 'NO APROBADO')}
+                  style={{ 
+                    cursor: 'pointer', 
+                    border: rapDetailJuicioFilter === 'NO APROBADO' ? '2px solid #dc2626' : '1px solid var(--border)',
+                    background: rapDetailJuicioFilter === 'NO APROBADO' ? '#fef2f2' : '#ffffff',
+                    transition: 'all 0.2s ease'
+                  }}
+                  title="Clic para filtrar solo aprendices No Aprobados"
+                >
                   <strong style={{ color: '#dc2626' }}>{selectedRapDetailModal.noAprobados} ({selectedRapDetailModal.pctNoAprobado}%)</strong>
-                  <span>No Aprobados</span>
+                  <span>No Aprobados {rapDetailJuicioFilter === 'NO APROBADO' ? '✓' : ''}</span>
                 </div>
               </div>
 
+              {/* Barra de Controles: Filtros Rápidos por Juicio y Buscador */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.75rem', gap: '0.75rem', flexWrap: 'wrap' }}>
+                <div className="filter-chips">
+                  <button 
+                    className={`chip ${rapDetailJuicioFilter === 'TODOS' ? 'active' : ''}`}
+                    onClick={() => setRapDetailJuicioFilter('TODOS')}
+                    style={{ fontSize: '0.76rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    Todos ({selectedRapDetailModal.aprendicesDetalle.length})
+                  </button>
+                  <button 
+                    className={`chip ${rapDetailJuicioFilter === 'APROBADO' ? 'active' : ''}`}
+                    onClick={() => setRapDetailJuicioFilter('APROBADO')}
+                    style={{ fontSize: '0.76rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    🟢 Aprobados ({selectedRapDetailModal.aprobados})
+                  </button>
+                  <button 
+                    className={`chip ${rapDetailJuicioFilter === 'POR EVALUAR' ? 'active' : ''}`}
+                    onClick={() => setRapDetailJuicioFilter('POR EVALUAR')}
+                    style={{ fontSize: '0.76rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    🟡 Por Evaluar ({selectedRapDetailModal.pendientes})
+                  </button>
+                  <button 
+                    className={`chip ${rapDetailJuicioFilter === 'NO APROBADO' ? 'active' : ''}`}
+                    onClick={() => setRapDetailJuicioFilter('NO APROBADO')}
+                    style={{ fontSize: '0.76rem', padding: '0.25rem 0.6rem' }}
+                  >
+                    🔴 No Aprobados ({selectedRapDetailModal.noAprobados})
+                  </button>
+                </div>
+
+                <div style={{ position: 'relative', minWidth: '240px' }}>
+                  <input 
+                    type="text"
+                    placeholder="Buscar documento o nombre..."
+                    value={rapDetailSearchText}
+                    onChange={(e) => setRapDetailSearchText(e.target.value)}
+                    style={{ width: '100%', fontSize: '0.78rem', padding: '0.4rem 0.6rem 0.4rem 1.8rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}
+                  />
+                  <i className="ph ph-magnifying-glass" style={{ position: 'absolute', left: '0.55rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', fontSize: '0.85rem' }}></i>
+                </div>
+              </div>
+
+              {/* Guía interactiva de ordenamiento por columna */}
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.74rem', color: 'var(--text-secondary)', marginBottom: '0.4rem' }}>
+                <span><i className="ph ph-info"></i> Haz clic en los encabezados para <strong>organizar por columna</strong> (ascendente / descendente).</span>
+                <span>Mostrando {sortedModalLearners.length} de {selectedRapDetailModal.aprendicesDetalle.length} aprendices</span>
+              </div>
+
+              {/* Tabla con Encabezados Ordenables y Formato de Fecha Ajustado */}
               <div className="table-container">
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Documento</th>
-                      <th>Aprendiz (EN FORMACIÓN)</th>
-                      <th>Juicio Evaluativo</th>
-                      <th>Fecha Asentamiento</th>
-                      <th>Funcionario</th>
-                      <th>Acción</th>
+                      <th 
+                        onClick={() => handleSortRapDetail('numDoc')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title="Clic para organizar por Documento"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                          <span>Documento</span>
+                          <i 
+                            className={`ph ${rapDetailSortField === 'numDoc' ? (rapDetailSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`}
+                            style={{ color: rapDetailSortField === 'numDoc' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSortRapDetail('nombre')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title="Clic para organizar por Aprendiz"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                          <span>Aprendiz (EN FORMACIÓN)</span>
+                          <i 
+                            className={`ph ${rapDetailSortField === 'nombre' ? (rapDetailSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`}
+                            style={{ color: rapDetailSortField === 'nombre' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSortRapDetail('juicio')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title="Clic para organizar por Juicio Evaluativo"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                          <span>Juicio Evaluativo</span>
+                          <i 
+                            className={`ph ${rapDetailSortField === 'juicio' ? (rapDetailSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`}
+                            style={{ color: rapDetailSortField === 'juicio' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSortRapDetail('fechaHora')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title="Clic para organizar por Fecha Asentamiento / Registro"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                          <span>Fecha Asentamiento</span>
+                          <i 
+                            className={`ph ${rapDetailSortField === 'fechaHora' ? (rapDetailSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`}
+                            style={{ color: rapDetailSortField === 'fechaHora' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </th>
+                      <th 
+                        onClick={() => handleSortRapDetail('funcionario')}
+                        style={{ cursor: 'pointer', userSelect: 'none' }}
+                        title="Clic para organizar por Funcionario"
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.3rem' }}>
+                          <span>Funcionario</span>
+                          <i 
+                            className={`ph ${rapDetailSortField === 'funcionario' ? (rapDetailSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`}
+                            style={{ color: rapDetailSortField === 'funcionario' ? 'var(--primary)' : 'var(--text-muted)', fontSize: '0.85rem' }}
+                          />
+                        </div>
+                      </th>
+                      <th style={{ width: '85px' }}>Acción</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {selectedRapDetailModal.aprendicesDetalle.map((a, i) => {
-                      const badgeClass = a.juicio === 'APROBADO' ? 'aprobado' : (a.juicio === 'NO APROBADO' ? 'no-aprobado' : 'pendiente');
-                      return (
-                        <tr key={i}>
-                          <td><strong>{a.numDoc}</strong></td>
-                          <td>{a.nombre}</td>
-                          <td><span className={`judgment-badge ${badgeClass}`}>{a.juicio}</span></td>
-                          <td><small>{a.fechaHora || '-'}</small></td>
-                          <td><small>{a.funcionario || 'SISTEMA'}</small></td>
-                          <td>
-                            {a.juicio === 'NO APROBADO' && (
-                              <button 
-                                className="btn btn-secondary" 
-                                style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem', color: '#b91c1c', borderColor: '#fca5a5' }}
-                                onClick={() => {
-                                  setSelectedRapDetailModal(null);
-                                  const aprObj = aprendices.find(apr => apr.numDoc === a.numDoc);
-                                  openEvaluationForLearner(aprObj || { numDoc: a.numDoc, nombreCompleto: a.nombre });
-                                }}
-                              >
-                                <i className="ph ph-scales"></i> Evaluar
-                              </button>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
+                    {sortedModalLearners.length === 0 ? (
+                      <tr>
+                        <td colSpan="6" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>
+                          No se encontraron aprendices con los filtros seleccionados.
+                        </td>
+                      </tr>
+                    ) : (
+                      sortedModalLearners.map((a, i) => {
+                        const badgeClass = a.juicio === 'APROBADO' ? 'aprobado' : (a.juicio === 'NO APROBADO' ? 'no-aprobado' : 'pendiente');
+                        return (
+                          <tr key={i}>
+                            <td><strong>{a.numDoc}</strong></td>
+                            <td>{a.nombre}</td>
+                            <td><span className={`judgment-badge ${badgeClass}`}>{a.juicio}</span></td>
+                            <td>{renderFechaAsentamiento(a.fechaHora)}</td>
+                            <td><small>{a.funcionario || 'SISTEMA'}</small></td>
+                            <td>
+                              {a.juicio === 'NO APROBADO' && (
+                                <button 
+                                  className="btn btn-secondary" 
+                                  style={{ padding: '0.2rem 0.5rem', fontSize: '0.72rem', color: '#b91c1c', borderColor: '#fca5a5' }}
+                                  onClick={() => {
+                                    setSelectedRapDetailModal(null);
+                                    const aprObj = aprendices.find(apr => apr.numDoc === a.numDoc);
+                                    openEvaluationForLearner(aprObj || { numDoc: a.numDoc, nombreCompleto: a.nombre });
+                                  }}
+                                  title="Evaluar caso según el Reglamento del Aprendiz"
+                                >
+                                  <i className="ph ph-scales"></i> Evaluar
+                                </button>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
                   </tbody>
                 </table>
               </div>

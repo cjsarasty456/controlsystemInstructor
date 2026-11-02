@@ -1,4 +1,5 @@
 import * as XLSX_PKG from 'xlsx';
+import { parseSenaDateParts } from './dateUtils';
 
 /**
  * Servicio de extracción y lectura de reportes Excel de SOFIA Plus / Zajuna (.xls / .xlsx)
@@ -6,7 +7,7 @@ import * as XLSX_PKG from 'xlsx';
  * Regla de Oro SENA:
  * Un aprendiz aparece N veces (una por cada RAP, ej: 75 RAPs en ADSO).
  * Este parser DEDUPLICA automáticamente para registrar exactamente 1 aprendiz,
- * agrupando sus N juicios de RAPs correspondientes.
+ * agrupando sus N juicios de RAPs correspondientes y formateando la fecha de registro/asentamiento.
  */
 
 export const parseSenaExcelReport = async (file) => {
@@ -21,7 +22,7 @@ export const parseSenaExcelReport = async (file) => {
     reader.onload = (e) => {
       try {
         const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
+        const workbook = XLSX.read(data, { type: 'array', cellDates: true });
         const firstSheetName = workbook.SheetNames[0];
         const sheet = workbook.Sheets[firstSheetName];
         const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
@@ -70,6 +71,27 @@ export const parseSenaExcelReport = async (file) => {
           }
         }
 
+        // Detección inteligente de columnas por encabezado
+        const headerRow = (rows[headerRowIndex] || []).map(c => 
+          String(c || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
+        );
+
+        const findColIndex = (keywords, defaultIndex) => {
+          const idx = headerRow.findIndex(h => keywords.some(k => h.includes(k)));
+          return idx >= 0 ? idx : defaultIndex;
+        };
+
+        const idxTipoDoc = findColIndex(['tipo de documento', 'tipo doc'], 0);
+        const idxNumDoc = findColIndex(['numero de documento', 'documento', 'num doc', 'identificacion'], 1);
+        const idxNombre = findColIndex(['nombre'], 2);
+        const idxApellidos = findColIndex(['apellido'], 3);
+        const idxEstado = findColIndex(['estado del aprendiz', 'estado aprendiz', 'estado'], 4);
+        const idxCompetencia = findColIndex(['competencia'], 5);
+        const idxRap = findColIndex(['resultado de aprendizaje', 'resultado', 'rap'], 6);
+        const idxJuicio = findColIndex(['juicio de evaluacion', 'juicio evaluativo', 'juicio'], 7);
+        const idxFecha = findColIndex(['fecha y hora', 'fecha de juicio', 'fecha asentamiento', 'fecha registro', 'fecha'], 8);
+        const idxFuncionario = findColIndex(['funcionario', 'instructor', 'usuario'], 9);
+
         // 2. Extraer Filas y Deduplicar Aprendices (1 aprendiz -> N RAPs)
         const allJuiciosRows = [];
         const aprendicesMap = new Map();
@@ -78,17 +100,17 @@ export const parseSenaExcelReport = async (file) => {
           const row = rows[i];
           if (!row || row.length < 3) continue;
 
-          const tipoDoc = String(row[0] || '').trim();
-          const numDoc = String(row[1] || '').trim();
-          const nombre = String(row[2] || '').trim();
-          const apellidos = String(row[3] || '').trim();
-          const estadoApr = String(row[4] || '').trim();
-          const competencia = String(row[5] || '').trim();
-          const rap = String(row[6] || '').trim();
+          const tipoDoc = String(row[idxTipoDoc] || '').trim();
+          const numDoc = String(row[idxNumDoc] || '').trim();
+          const nombre = String(row[idxNombre] || '').trim();
+          const apellidos = String(row[idxApellidos] || '').trim();
+          const estadoApr = String(row[idxEstado] || '').trim();
+          const competencia = String(row[idxCompetencia] || '').trim();
+          const rap = String(row[idxRap] || '').trim();
           
-          let juicioVal = String(row[7] || '').trim();
-          if (!juicioVal && row[8] && (String(row[8]).trim() === 'APROBADO' || String(row[8]).trim() === 'NO APROBADO')) {
-            juicioVal = String(row[8]).trim();
+          let juicioVal = String(row[idxJuicio] || '').trim();
+          if (!juicioVal && row[idxJuicio + 1] && (String(row[idxJuicio + 1]).trim() === 'APROBADO' || String(row[idxJuicio + 1]).trim() === 'NO APROBADO')) {
+            juicioVal = String(row[idxJuicio + 1]).trim();
           }
 
           let juicioNormalizado = 'POR EVALUAR';
@@ -99,8 +121,12 @@ export const parseSenaExcelReport = async (file) => {
             juicioNormalizado = 'NO APROBADO';
           }
 
-          const fechaHoraJuicio = String(row[8] || row[9] || '').trim();
-          const funcionario = String(row[9] || row[10] || '').trim();
+          // Procesar y normalizar la fecha de registro / asentamiento del juicio
+          const rawFecha = row[idxFecha];
+          const parsedFecha = parseSenaDateParts(rawFecha);
+          const fechaHoraJuicio = parsedFecha.fullFormatted || parsedFecha.dateStr || '';
+
+          const funcionario = String(row[idxFuncionario] || '').trim();
 
           if (numDoc) {
             const juicioItem = {

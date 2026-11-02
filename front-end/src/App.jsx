@@ -6,6 +6,15 @@ import FichaModal from './components/FichaModal';
 import PreviewReportModal from './components/PreviewReportModal';
 import { loadFichas, saveFichas } from './services/storage';
 import { parseSenaExcelReport } from './services/excelParser';
+import { 
+  checkBackendHealth, 
+  fetchFichasApi, 
+  fetchFichaDetailApi, 
+  createFichaApi, 
+  uploadJuiciosExcelApi, 
+  saveProjectReportApi 
+} from './services/apiService';
+import { DEFAULT_ADSO_PROJECT } from './services/projectReportService';
 
 export default function App() {
   const [fichas, setFichas] = useState([]);
@@ -14,10 +23,63 @@ export default function App() {
   const [isFichaModalOpen, setIsFichaModalOpen] = useState(false);
   const [previewParsedData, setPreviewParsedData] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
+  const [backendStatus, setBackendStatus] = useState({ online: false, info: null });
+  const [lastUploadedFile, setLastUploadedFile] = useState(null);
 
-  useEffect(() => {
+  // Sincronización inicial con Backend Spring Boot (o fallback a almacenamiento local)
+  const syncWithBackend = async () => {
+    try {
+      const health = await checkBackendHealth();
+      if (health && health.status === 'UP') {
+        setBackendStatus({ online: true, info: health });
+        const backendFichas = await fetchFichasApi();
+        if (Array.isArray(backendFichas) && backendFichas.length > 0) {
+          const mapped = await Promise.all(backendFichas.map(async (bf) => {
+            let parsedProject = DEFAULT_ADSO_PROJECT;
+            if (bf.reporteProyectoJson) {
+              try { parsedProject = JSON.parse(bf.reporteProyectoJson); } catch (e) {}
+            }
+            
+            // Cargar detalle completo de cada ficha desde PostgreSQL
+            try {
+              const detail = await fetchFichaDetailApi(bf.numero || bf.id);
+              return {
+                ...detail,
+                id: 'ficha_' + bf.numero,
+                backendId: bf.id,
+                reporteProyecto: parsedProject,
+                aprendices: detail.aprendices || [],
+                juicios: detail.juicios || [],
+                reportes: detail.reportes || []
+              };
+            } catch (err) {
+              return {
+                ...bf,
+                id: 'ficha_' + bf.numero,
+                backendId: bf.id,
+                reporteProyecto: parsedProject
+              };
+            }
+          }));
+
+          setFichas(mapped);
+          saveFichas(mapped);
+          return;
+        }
+      } else {
+        setBackendStatus({ online: false, info: null });
+      }
+    } catch (err) {
+      setBackendStatus({ online: false, info: null });
+    }
+
+    // Fallback a almacenamiento local del navegador si backend está desconectado
     const loaded = loadFichas();
     setFichas(loaded);
+  };
+
+  useEffect(() => {
+    syncWithBackend();
   }, []);
 
   const showToast = (msg) => {
@@ -28,9 +90,31 @@ export default function App() {
   const currentFicha = fichas.find(f => f.id === currentFichaId);
 
   // Navegación
-  const handleSelectFicha = (id) => {
+  const handleSelectFicha = async (id) => {
     setCurrentFichaId(id);
     setActiveNav('fichas_detail');
+
+    if (backendStatus.online) {
+      const f = fichas.find(item => item.id === id);
+      if (f) {
+        try {
+          const detail = await fetchFichaDetailApi(f.numero || f.backendId || id);
+          setFichas(prev => prev.map(item => {
+            if (item.id === id) {
+              return {
+                ...item,
+                aprendices: detail.aprendices || [],
+                juicios: detail.juicios || [],
+                reportes: detail.reportes || []
+              };
+            }
+            return item;
+          }));
+        } catch (e) {
+          console.warn("No se pudo obtener detalle fresco de backend, usando datos en caché.", e);
+        }
+      }
+    }
   };
 
   const handleBackToFichas = () => {
@@ -53,17 +137,39 @@ export default function App() {
   };
 
   // Guardar Nueva Ficha (HU-007)
-  const handleSaveFicha = (newFichaData) => {
+  const handleSaveFicha = async (newFichaData) => {
     const exists = fichas.find(f => f.numero === newFichaData.numero);
     if (exists) {
       alert(`La ficha número ${newFichaData.numero} ya se encuentra registrada.`);
       return;
     }
 
+    let backendId = null;
+    if (backendStatus.online) {
+      try {
+        const savedBackend = await createFichaApi({
+          numeroFicha: newFichaData.numero,
+          programaNombre: newFichaData.programa,
+          programaCodigo: newFichaData.codigo || '228118',
+          jornada: newFichaData.jornada || 'PRESENCIAL',
+          fechaInicio: newFichaData.fechaInicio || '2024-12-16',
+          fechaFin: newFichaData.fechaFin || '2027-05-07',
+          regional: newFichaData.regional || '41 - REGIONAL HUILA',
+          sedeCentro: newFichaData.centro || '9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS',
+          estado: newFichaData.estado || 'EN EJECUCION'
+        });
+        backendId = savedBackend.id;
+      } catch (e) {
+        console.warn("Fallo guardado en backend, guardando localmente.", e);
+      }
+    }
+
     const newFicha = {
       id: 'ficha_' + newFichaData.numero,
+      backendId,
       ...newFichaData,
       version: '1',
+      reporteProyecto: DEFAULT_ADSO_PROJECT,
       aprendices: [],
       historialCargues: [],
       reportes: [],
@@ -74,12 +180,21 @@ export default function App() {
     setFichas(updated);
     saveFichas(updated);
     setIsFichaModalOpen(false);
-    showToast(`Ficha ${newFichaData.numero} registrada exitosamente.`);
+    showToast(`Ficha ${newFichaData.numero} registrada exitosamente${backendStatus.online ? ' en PostgreSQL' : ''}.`);
   };
 
   // Guardar Nuevo Reporte de Proyecto Formativo (HU-009)
-  const handleSaveProjectReport = (customProject) => {
+  const handleSaveProjectReport = async (customProject) => {
     if (!currentFicha) return;
+
+    if (backendStatus.online && currentFicha.backendId) {
+      try {
+        await saveProjectReportApi(currentFicha.backendId, customProject);
+      } catch (e) {
+        console.warn("Fallo guardado de proyecto en backend.", e);
+      }
+    }
+
     const updated = fichas.map(f => {
       if (f.id === currentFicha.id) {
         return {
@@ -97,6 +212,7 @@ export default function App() {
   // Carga de Excel (HU-008)
   const handleExcelUpload = async (file) => {
     try {
+      setLastUploadedFile(file);
       const parsed = await parseSenaExcelReport(file);
       setPreviewParsedData(parsed);
     } catch (err) {
@@ -106,9 +222,37 @@ export default function App() {
   };
 
   // Confirmar Importación con Deduplicación y Registro de Actualización
-  const handleConfirmImport = () => {
+  const handleConfirmImport = async () => {
     if (!previewParsedData || !currentFicha) return;
 
+    // Si el backend Spring Boot está conectado, sincronizar archivo en PostgreSQL
+    if (backendStatus.online && lastUploadedFile && currentFicha.backendId) {
+      try {
+        const uploadResult = await uploadJuiciosExcelApi(currentFicha.backendId, lastUploadedFile);
+        showToast(`Backend: ${uploadResult.mensaje} (${uploadResult.aprendicesUnicos} aprendices únicos en PostgreSQL).`);
+        
+        // Recargar detalle fresco desde backend
+        const detail = await fetchFichaDetailApi(currentFicha.numero || currentFicha.backendId);
+        setFichas(prev => prev.map(item => {
+          if (item.id === currentFicha.id) {
+            return {
+              ...item,
+              aprendices: detail.aprendices || [],
+              juicios: detail.juicios || [],
+              reportes: detail.reportes || []
+            };
+          }
+          return item;
+        }));
+        setPreviewParsedData(null);
+        setLastUploadedFile(null);
+        return;
+      } catch (err) {
+        console.warn("Fallo subida a backend, aplicando actualización local.", err);
+      }
+    }
+
+    // Proceso local existente (garantiza funcionamiento offline o inmediato)
     const parsed = previewParsedData;
     const timestampActual = new Date().toLocaleString();
 
@@ -121,82 +265,63 @@ export default function App() {
       if (f.id === currentFicha.id) {
         const learnersMap = new Map();
         
-        // Cargar aprendices existentes para comparativa
         (f.aprendices || []).forEach(apr => {
           learnersMap.set(apr.numDoc, { ...apr, raps: [...(apr.raps || [])] });
         });
 
-        // Procesar aprendices deduplicados del nuevo cargue
         parsed.aprendices.forEach(inApr => {
-          if (!learnersMap.has(inApr.numDoc)) {
-            // Aprendiz nuevo (se registra exactamente 1 vez)
-            aprendicesNuevos++;
-            learnersMap.set(inApr.numDoc, inApr);
-          } else {
-            // Aprendiz existente: actualizar datos y RAPs
+          if (learnersMap.has(inApr.numDoc)) {
             aprendicesActualizados++;
-            const existing = learnersMap.get(inApr.numDoc);
-            existing.tipoDoc = inApr.tipoDoc || existing.tipoDoc;
-            existing.nombre = inApr.nombre || existing.nombre;
-            existing.apellidos = inApr.apellidos || existing.apellidos;
-            existing.nombreCompleto = inApr.nombreCompleto || existing.nombreCompleto;
-            existing.estado = inApr.estado || existing.estado;
+            const existingApr = learnersMap.get(inApr.numDoc);
+            existingApr.nombreCompleto = inApr.nombreCompleto;
+            existingApr.estado = inApr.estado;
 
-            // Fusionar o actualizar RAPs
-            const existingRapsMap = new Map();
-            (existing.raps || []).forEach(r => existingRapsMap.set(r.rap, r));
-
-            inApr.raps.forEach(incomingRap => {
-              if (existingRapsMap.has(incomingRap.rap)) {
-                const curRap = existingRapsMap.get(incomingRap.rap);
-                // Detectar si fue promovido a aprobado
-                if (curRap.juicio !== 'APROBADO' && incomingRap.juicio === 'APROBADO') {
-                  juiciosNuevosAprobados++;
+            inApr.raps.forEach(newRap => {
+              const existingRapIdx = existingApr.raps.findIndex(r => r.rap === newRap.rap);
+              if (existingRapIdx >= 0) {
+                const prevJuicio = existingApr.raps[existingRapIdx].juicio;
+                if (prevJuicio !== newRap.juicio) {
                   juiciosActualizados++;
+                  if (newRap.juicio === 'APROBADO') juiciosNuevosAprobados++;
+                  existingApr.raps[existingRapIdx] = newRap;
                 }
-                curRap.juicio = incomingRap.juicio;
-                curRap.fechaHora = incomingRap.fechaHora || curRap.fechaHora;
-                curRap.funcionario = incomingRap.funcionario || curRap.funcionario;
               } else {
-                existingRapsMap.set(incomingRap.rap, incomingRap);
-                if (incomingRap.juicio === 'APROBADO') juiciosNuevosAprobados++;
+                existingApr.raps.push(newRap);
+                if (newRap.juicio === 'APROBADO') juiciosNuevosAprobados++;
               }
             });
 
-            // Recalcular métricas del aprendiz
-            const allRaps = Array.from(existingRapsMap.values());
-            existing.raps = allRaps;
-            existing.totalRaps = allRaps.length;
-            existing.aprobados = allRaps.filter(r => r.juicio === 'APROBADO').length;
-            existing.pendientes = allRaps.filter(r => r.juicio === 'POR EVALUAR').length;
-            existing.noAprobados = allRaps.filter(r => r.juicio === 'NO APROBADO').length;
+            existingApr.aprobados = existingApr.raps.filter(r => r.juicio === 'APROBADO').length;
+            existingApr.noAprobados = existingApr.raps.filter(r => r.juicio === 'NO APROBADO').length;
+            existingApr.pendientes = existingApr.raps.filter(r => r.juicio === 'POR EVALUAR').length;
+            existingApr.totalRaps = existingApr.raps.length;
+          } else {
+            aprendicesNuevos++;
+            learnersMap.set(inApr.numDoc, inApr);
+            juiciosNuevosAprobados += inApr.aprobados;
           }
         });
 
         const updatedLearners = Array.from(learnersMap.values());
-
-        // Consecutivo del cargue
         const historial = f.historialCargues || [];
-        const numeroCargue = historial.length + 1;
+        const consecutivo = historial.length + 1;
 
-        // Registro de Actualización (Auditoría del Cargue)
         const nuevoRegistroCargue = {
           id: 'cargue_' + Date.now(),
-          numeroCargue,
-          filename: parsed.meta.filename,
-          fechaReporte: parsed.meta.fechaReporte,
+          numeroCargue: consecutivo,
+          filename: parsed.meta.filename || 'Reporte_Juicios_SOFIA.xlsx',
+          fechaReporte: parsed.meta.fechaReporte || 'N/A',
           fechaCargue: timestampActual,
           totalFilasExcel: parsed.totalFilasExcel,
           totalAprendicesAfectados: parsed.totalAprendicesUnicos,
           aprendicesNuevos,
           aprendicesActualizados,
           juiciosNuevosAprobados,
-          totalJuiciosArchivo: parsed.juicios.length,
+          juiciosActualizados,
           subidoPor: 'Carlos Julio Cadena (Instructor)',
-          observacion: `Cargue #${numeroCargue} procesado: ${parsed.totalAprendicesUnicos} aprendices únicos, ${juiciosNuevosAprobados} nuevos juicios aprobados.`
+          observacion: `Actualización SOFIA: ${aprendicesNuevos} nuevos aprendices, ${aprendicesActualizados} actualizados.`
         };
 
-        // Recalcular matriz consolidada de juicios
         const consolidadoJuicios = [];
         updatedLearners.forEach(apr => {
           (apr.raps || []).forEach(r => {
@@ -232,7 +357,8 @@ export default function App() {
     setFichas(updatedFichas);
     saveFichas(updatedFichas);
     setPreviewParsedData(null);
-    showToast(`Cargue procesado: ${parsed.totalAprendicesUnicos} aprendices únicos actualizados. (${parsed.totalFilasExcel} filas deduplicadas).`);
+    setLastUploadedFile(null);
+    showToast(`Cargue procesado: ${parsed.totalAprendicesUnicos} aprendices únicos actualizados (${parsed.totalFilasExcel} filas deduplicadas).`);
   };
 
   return (
@@ -246,14 +372,36 @@ export default function App() {
             </div>
             <div>
               <h1>Sistema de Control de Instructores</h1>
-              <span className="subtext">SENA — CIES Regional Huila | Centro de Control Académico (React JS)</span>
+              <span className="subtext">SENA — CIES Regional Huila | Centro de Control Académico</span>
             </div>
           </div>
-          <div className="user-info">
-            <div className="avatar"><i className="ph ph-user"></i></div>
-            <div className="user-details">
-              <span className="user-name">Carlos Julio Cadena</span>
-              <span className="user-role">Instructor Técnico ADSO</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            {/* Indicador de Estado del Backend Spring Boot */}
+            <div 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                background: backendStatus.online ? '#ecfdf5' : '#fffbeb', 
+                border: `1px solid ${backendStatus.online ? '#a7f3d0' : '#fde68a'}`, 
+                padding: '0.35rem 0.75rem', 
+                borderRadius: '20px', 
+                fontSize: '0.78rem' 
+              }}
+              title={backendStatus.online ? `Conectado a ${backendStatus.info?.backend} con ${backendStatus.info?.database}` : 'Backend fuera de línea. Operando en almacenamiento local del navegador.'}
+            >
+              <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: backendStatus.online ? '#10b981' : '#f59e0b', display: 'inline-block' }}></span>
+              <span style={{ fontWeight: '600', color: backendStatus.online ? '#065f46' : '#92400e' }}>
+                {backendStatus.online ? 'Spring Boot 3 + PostgreSQL (Conectado)' : 'Modo Front-end Local'}
+              </span>
+            </div>
+
+            <div className="user-info">
+              <div className="avatar"><i className="ph ph-user"></i></div>
+              <div className="user-details">
+                <span className="user-name">Carlos Julio Cadena</span>
+                <span className="user-role">Instructor Técnico ADSO</span>
+              </div>
             </div>
           </div>
         </div>
