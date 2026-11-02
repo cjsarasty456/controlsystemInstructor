@@ -1,0 +1,562 @@
+[
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593343",
+    "rapDesc": "01 IDENTIFICAR LA DINÁMICA",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593343 - 01 IDENTIFICAR LA DINÁMICA"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593117",
+    "rapDesc": "01 COMPRENDER INFORMACIÓN",
+    "compCode": "240202501",
+    "compDesc": "INTERACTUAR EN LENGUA INGLESA",
+    "rawLine": "593117 - 01 COMPRENDER INFORMACIÓN       240202501 - INTERACTUAR EN LENGUA INGLESA"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593151",
+    "rapDesc": "02 APLICAR FUNCIONALIDADES DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593151 - 02 APLICAR FUNCIONALIDADES DE"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593152",
+    "rapDesc": "04 OPTIMIZAR LOS RESULTADOS, DE",
+    "compCode": "220501046",
+    "compDesc": "Utilizar herramientas informáticas de",
+    "rawLine": "DETERMINAR LAS ESPECIFICACIONES              593152 - 04 OPTIMIZAR LOS RESULTADOS, DE 220501046 - Utilizar herramientas informáticas de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593153",
+    "rapDesc": "03 EVALUAR LOS RESULTADOS, DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "DETERMINAR LAS ESPECIFICACIONES    593153 - 03 EVALUAR LOS RESULTADOS, DE"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593154",
+    "rapDesc": "01 ALISTAR HERRAMIENTAS DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593154 - 01 ALISTAR HERRAMIENTAS DE"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593344",
+    "rapDesc": "02 RECOLECTAR INFORMACIÓN DEL",
+    "compCode": "220501092",
+    "compDesc": "Establecer requisitos de la solución de",
+    "rawLine": "593344 - 02 RECOLECTAR INFORMACIÓN DEL        220501092 - Establecer requisitos de la solución de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593345",
+    "rapDesc": "04 VALIDAR EL INFORME DE",
+    "compCode": "220501092",
+    "compDesc": "Establecer requisitos de la solución de",
+    "rawLine": "593345 - 04 VALIDAR EL INFORME DE             220501092 - Establecer requisitos de la solución de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593346",
+    "rapDesc": "01 CARACTERIZAR LOS PROCESOS DE",
+    "compCode": "220501092",
+    "compDesc": "Establecer requisitos de la solución de",
+    "rawLine": "593346 - 01 CARACTERIZAR LOS PROCESOS DE      220501092 - Establecer requisitos de la solución de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593347",
+    "rapDesc": "03 ESTABLECER LOS REQUISITOS DEL",
+    "compCode": "220501092",
+    "compDesc": "Establecer requisitos de la solución de",
+    "rawLine": "593347 - 03 ESTABLECER LOS REQUISITOS DEL     220501092 - Establecer requisitos de la solución de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "592373",
+    "rapDesc": "02 MODELAR LAS FUNCIONES DEL",
+    "compCode": "220501093",
+    "compDesc": "Evaluar requisitos de la solución de",
+    "rawLine": "592373 - 02 MODELAR LAS FUNCIONES DEL         220501093 - Evaluar requisitos de la solución de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "592374",
+    "rapDesc": "04 VERIFICAR LOS MODELOS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "592374 - 04 VERIFICAR LOS MODELOS"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "592375",
+    "rapDesc": "01 PLANEAR ACTIVIDADES DE ANÁLISIS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "592375 - 01 PLANEAR ACTIVIDADES DE ANÁLISIS"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593115",
+    "rapDesc": "02 INTERCAMBIAR OPINIONES SOBRE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593115 - 02 INTERCAMBIAR OPINIONES SOBRE"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593225",
+    "rapDesc": "01 ANALIZAR LOS COMPONENTES DE",
+    "compCode": "240201524",
+    "compDesc": "DESARROLLAR PROCESOS DE",
+    "rawLine": "593225 - 01 ANALIZAR LOS COMPONENTES DE  240201524 - DESARROLLAR PROCESOS DE"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "592376",
+    "rapDesc": "03 DESARROLLAR PROCESOS",
+    "compCode": "220501093",
+    "compDesc": "Evaluar requisitos de la solución de",
+    "rawLine": "ESTRUCTURAR PROCESOS LOGICOS       592376 - 03 DESARROLLAR PROCESOS         220501093 - Evaluar requisitos de la solución de"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593159",
+    "rapDesc": "02 SOLUCIONAR PROBLEMAS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "ESTRUCTURAR PROCESOS LOGICOS    593159 - 02 SOLUCIONAR PROBLEMAS"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593160",
+    "rapDesc": "04 PROPONER ACCIONES DE MEJORA",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "ESTRUCTURAR PROCESOS LOGICOS    593160 - 04 PROPONER ACCIONES DE MEJORA"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593161",
+    "rapDesc": "03 VERIFICAR LAS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "ESTRUCTURAR PROCESOS LOGICOS    593161 - 03 VERIFICAR LAS"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593162",
+    "rapDesc": "01 IDENTIFICAR LOS PRINCIPIOS Y",
+    "compCode": "220201501",
+    "compDesc": "APLICACIÓN DE CONOCIMIENTOS DE",
+    "rawLine": "593162 - 01 IDENTIFICAR LOS PRINCIPIOS Y   220201501 - APLICACIÓN DE CONOCIMIENTOS DE"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593255",
+    "rapDesc": "03 RESOLVER PROBLEMAS",
+    "compCode": "240201528",
+    "compDesc": "Razonar cuantitativamente frente a",
+    "rawLine": "593255 - 03 RESOLVER PROBLEMAS             240201528 - Razonar cuantitativamente frente a"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593256",
+    "rapDesc": "01 IDENTIFICAR MODELOS",
+    "compCode": "240201528",
+    "compDesc": "Razonar cuantitativamente frente a",
+    "rawLine": "593256 - 01 IDENTIFICAR MODELOS            240201528 - Razonar cuantitativamente frente a"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593257",
+    "rapDesc": "04 PROPONER ACCIONES DE MEJORA",
+    "compCode": "240201528",
+    "compDesc": "Razonar cuantitativamente frente a",
+    "rawLine": "593257 - 04 PROPONER ACCIONES DE MEJORA    240201528 - Razonar cuantitativamente frente a"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593258",
+    "rapDesc": "02 PLANTEAR PROBLEMAS",
+    "compCode": "240201528",
+    "compDesc": "Razonar cuantitativamente frente a",
+    "rawLine": "593258 - 02 PLANTEAR PROBLEMAS             240201528 - Razonar cuantitativamente frente a"
+  },
+  {
+    "fase": "Fase 1: Análisis",
+    "rapCode": "593105",
+    "rapDesc": "05 REALIZAR PRUEBAS AL SOFTWARE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "CODIFICAR LOS MÓDULOS DEL       593105 - 05 REALIZAR PRUEBAS AL SOFTWARE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593106",
+    "rapDesc": "01 PLANEAR ACTIVIDADES DE",
+    "compCode": "220501096",
+    "compDesc": "DESARROLLAR LA SOLUCIÓN DE",
+    "rawLine": "593106 - 01 PLANEAR ACTIVIDADES DE         220501096 - DESARROLLAR LA SOLUCIÓN DE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593108",
+    "rapDesc": "04 CODIFICAR EL SOFTWARE DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "CODIFICAR LOS MÓDULOS DEL       593108 - 04 CODIFICAR EL SOFTWARE DE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593146",
+    "rapDesc": "01 INCORPORAR ACTIVIDADES DE",
+    "compCode": "220501098",
+    "compDesc": "Controlar la calidad del servicio de",
+    "rawLine": "CODIFICAR LOS MÓDULOS DEL       593146 - 01 INCORPORAR ACTIVIDADES DE      220501098 - Controlar la calidad del servicio de"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593155",
+    "rapDesc": "04 PROPONER ACCIONES DE MEJORA",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593155 - 04 PROPONER ACCIONES DE MEJORA"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593157",
+    "rapDesc": "03 REALIZAR SEGUIMIENTO Y",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593157 - 03 REALIZAR SEGUIMIENTO Y"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593104",
+    "rapDesc": "03 CREAR COMPONENTES FRONT-END",
+    "compCode": "220501096",
+    "compDesc": "DESARROLLAR LA SOLUCIÓN DE",
+    "rawLine": "DESARROLLAR LA ESTRUCTURA DE      593104 - 03 CREAR COMPONENTES FRONT-END 220501096 - DESARROLLAR LA SOLUCIÓN DE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593107",
+    "rapDesc": "02 CONSTRUIR LA BASE DE DATOS",
+    "compCode": "220501096",
+    "compDesc": "DESARROLLAR LA SOLUCIÓN DE",
+    "rawLine": "DESARROLLAR LA ESTRUCTURA DE      593107 - 02 CONSTRUIR LA BASE DE DATOS   220501096 - DESARROLLAR LA SOLUCIÓN DE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593113",
+    "rapDesc": "06 EXPLICAR LAS FUNCIONES DE SU",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593113 - 06 EXPLICAR LAS FUNCIONES DE SU"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593121",
+    "rapDesc": "03 EJECUTAR ACTIVIDADES DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593121 - 03 EJECUTAR ACTIVIDADES DE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593122",
+    "rapDesc": "04 IMPLEMENTAR UN PLAN DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "DESARROLLAR LA ESTRUCTURA DE      593122 - 04 IMPLEMENTAR UN PLAN DE"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593109",
+    "rapDesc": "03 DOCUMENTAR EL PROCESO DE",
+    "compCode": "220501097",
+    "compDesc": "Implementar la solución de software de",
+    "rawLine": "DESARROLLAR LAS TAREAS DE         593109 - 03 DOCUMENTAR EL PROCESO DE     220501097 - Implementar la solución de software de"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593110",
+    "rapDesc": "02 DESPLEGAR EL SOFTWARE DE",
+    "compCode": "220501097",
+    "compDesc": "Implementar la solución de software de",
+    "rawLine": "DESARROLLAR LAS TAREAS DE         593110 - 02 DESPLEGAR EL SOFTWARE DE     220501097 - Implementar la solución de software de"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593111",
+    "rapDesc": "01 PLANEAR ACTIVIDADES DE",
+    "compCode": "220501097",
+    "compDesc": "Implementar la solución de software de",
+    "rawLine": "DESARROLLAR LAS TAREAS DE         593111 - 01 PLANEAR ACTIVIDADES DE       220501097 - Implementar la solución de software de"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593112",
+    "rapDesc": "04 IMPLANTAR EL SOFTWARE DE",
+    "compCode": "220501097",
+    "compDesc": "Implementar la solución de software de",
+    "rawLine": "DESARROLLAR LAS TAREAS DE         593112 - 04 IMPLANTAR EL SOFTWARE DE     220501097 - Implementar la solución de software de"
+  },
+  {
+    "fase": "Fase 3: Ejecución",
+    "rapCode": "593114",
+    "rapDesc": "04 IMPLEMENTAR ACCIONES DE",
+    "compCode": "240202501",
+    "compDesc": "INTERACTUAR EN LENGUA INGLESA",
+    "rawLine": "593114 - 04 IMPLEMENTAR ACCIONES DE                      240202501 - INTERACTUAR EN LENGUA INGLESA"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593144",
+    "rapDesc": "02 VERIFICAR LA CALIDAD DEL",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "REALIZAR ACTIVIDADES DE           593144 - 02 VERIFICAR LA CALIDAD DEL"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593145",
+    "rapDesc": "03 REALIZAR ACTIVIDADES DE MEJORA",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "REALIZAR ACTIVIDADES DE           593145 - 03 REALIZAR ACTIVIDADES DE MEJORA"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593259",
+    "rapDesc": "02 CARACTERIZAR LA IDEA DE",
+    "compCode": "240201529",
+    "compDesc": "Gestionar procesos propios de la cultura",
+    "rawLine": "593259 - 02 CARACTERIZAR LA IDEA DE             240201529 - Gestionar procesos propios de la cultura"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593340",
+    "rapDesc": "03 ESTRUCTURAR EL PLAN DE",
+    "compCode": "240201529",
+    "compDesc": "Gestionar procesos propios de la cultura",
+    "rawLine": "593340 - 03 ESTRUCTURAR EL PLAN DE                       240201529 - Gestionar procesos propios de la cultura"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593341",
+    "rapDesc": "04 VALORAR LA PROPUESTA DE",
+    "compCode": "240201529",
+    "compDesc": "Gestionar procesos propios de la cultura",
+    "rawLine": "593341 - 04 VALORAR LA PROPUESTA DE        240201529 - Gestionar procesos propios de la cultura"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593342",
+    "rapDesc": "01 INTEGRAR ELEMENTOS DE LA",
+    "compCode": "240201529",
+    "compDesc": "Gestionar procesos propios de la cultura",
+    "rawLine": "593342 - 01 INTEGRAR ELEMENTOS DE LA       240201529 - Gestionar procesos propios de la cultura"
+  },
+  {
+    "fase": "Fase 4: Evaluación",
+    "rapCode": "593100",
+    "rapDesc": "03 DETERMINAR LAS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "CONSTRUIR EL PROTOTIPO DEL         593100 - 03 DETERMINAR LAS"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593116",
+    "rapDesc": "05 PRESENTAR UN PROCESO PARA LA",
+    "compCode": "240202501",
+    "compDesc": "INTERACTUAR EN LENGUA INGLESA",
+    "rawLine": "593116 - 05 PRESENTAR UN PROCESO PARA LA   240202501 - INTERACTUAR EN LENGUA INGLESA"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593119",
+    "rapDesc": "02 PRACTICAR HÁBITOS SALUDABLES",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593119 - 02 PRACTICAR HÁBITOS SALUDABLES"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593120",
+    "rapDesc": "01 DESARROLLAR HABILIDADES",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593120 - 01 DESARROLLAR HABILIDADES"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593156",
+    "rapDesc": "01 ANALIZAR LAS ESTRATEGIAS PARA",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593156 - 01 ANALIZAR LAS ESTRATEGIAS PARA"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593158",
+    "rapDesc": "02 IMPLEMENTAR ESTRATEGIAS PARA",
+    "compCode": "220601501",
+    "compDesc": "APLICAR PRÁCTICAS DE",
+    "rawLine": "593158 - 02 IMPLEMENTAR ESTRATEGIAS PARA 220601501 - APLICAR PRÁCTICAS DE"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593101",
+    "rapDesc": "02 ESTRUCTURAR EL MODELO DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593101 - 02 ESTRUCTURAR EL MODELO DE"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593102",
+    "rapDesc": "04 VERIFICAR LOS ENTREGABLES DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593102 - 04 VERIFICAR LOS ENTREGABLES DE"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593103",
+    "rapDesc": "01 ELABORAR LOS ARTEFACTOS DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593103 - 01 ELABORAR LOS ARTEFACTOS DE"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593118",
+    "rapDesc": "03 DISCUTIR SOBRE POSIBLES",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593118 - 03 DISCUTIR SOBRE POSIBLES"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593147",
+    "rapDesc": "02 ESTABLECER RELACIONES DE",
+    "compCode": "240201526",
+    "compDesc": "Enrique Low Murtra-Interactuar en el",
+    "rawLine": "593147 - 02 ESTABLECER RELACIONES DE              240201526 - Enrique Low Murtra-Interactuar en el"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593148",
+    "rapDesc": "03 PROMOVER EL USO RACIONAL DE",
+    "compCode": "240201526",
+    "compDesc": "Enrique Low Murtra-Interactuar en el",
+    "rawLine": "593148 - 03 PROMOVER EL USO RACIONAL DE           240201526 - Enrique Low Murtra-Interactuar en el"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593149",
+    "rapDesc": "01 PROMOVER MI DIGNIDAD Y LA DEL",
+    "compCode": "240201526",
+    "compDesc": "Enrique Low Murtra-Interactuar en el",
+    "rawLine": "593149 - 01 PROMOVER MI DIGNIDAD Y LA DEL 240201526 - Enrique Low Murtra-Interactuar en el"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593150",
+    "rapDesc": "04 CONTRIBUIR CON EL",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593150 - 04 CONTRIBUIR CON EL"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593235",
+    "rapDesc": "04 PROPONER SOLUCIONES A LAS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593235 - 04 PROPONER SOLUCIONES A LAS"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593236",
+    "rapDesc": "01 ANALIZAR EL CONTEXTO",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593236 - 01 ANALIZAR EL CONTEXTO"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593237",
+    "rapDesc": "03 ARGUMENTAR ASPECTOS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593237 - 03 ARGUMENTAR ASPECTOS"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593238",
+    "rapDesc": "02 ESTRUCTURAR EL PROYECTO DE",
+    "compCode": "240201064",
+    "compDesc": "Orientar investigación formativa según",
+    "rawLine": "DETERMINAR LA ESTRUCTURA LÓGICA 593238 - 02 ESTRUCTURAR EL PROYECTO DE    240201064 - Orientar investigación formativa según"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593060",
+    "rapDesc": "01 DEFINIR ESPECIFICACIONES",
+    "compCode": "220501094",
+    "compDesc": "Estructurar propuesta técnica de servicio",
+    "rawLine": "593060 - 01 DEFINIR ESPECIFICACIONES      220501094 - Estructurar propuesta técnica de servicio"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593061",
+    "rapDesc": "03 VALIDAR LAS CONDICIONES DE LA",
+    "compCode": "220501094",
+    "compDesc": "Estructurar propuesta técnica de servicio",
+    "rawLine": "593061 - 03 VALIDAR LAS CONDICIONES DE LA 220501094 - Estructurar propuesta técnica de servicio"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593062",
+    "rapDesc": "02 ELABORAR PROPUESTA TÉCNICA",
+    "compCode": "220501094",
+    "compDesc": "Estructurar propuesta técnica de servicio",
+    "rawLine": "593062 - 02 ELABORAR PROPUESTA TÉCNICA                      220501094 - Estructurar propuesta técnica de servicio"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593224",
+    "rapDesc": "03 RELACIONAR LOS PROCESOS",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593224 - 03 RELACIONAR LOS PROCESOS"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593226",
+    "rapDesc": "04 ESTABLECER PROCESOS DE",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593226 - 04 ESTABLECER PROCESOS DE"
+  },
+  {
+    "fase": "Fase 2: Planeación",
+    "rapCode": "593227",
+    "rapDesc": "02 ARGUMENTAR EN FORMA ORAL Y",
+    "compCode": "",
+    "compDesc": "",
+    "rawLine": "593227 - 02 ARGUMENTAR EN FORMA ORAL Y"
+  }
+]

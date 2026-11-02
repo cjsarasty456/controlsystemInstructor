@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Sistema de Control de Instructores — SENA (React JS)</title>
+  <link rel="stylesheet" href="css/styles.css" />
+  <!-- Íconos Phosphor Icons -->
+  <script src="https://unpkg.com/@phosphor-icons/web"></script>
+  <!-- SheetJS para parseo nativo de Excel (.xls / .xlsx) de SOFIA Plus -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- React 18 & ReactDOM UMD -->
+  <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+  <!-- Babel Standalone para transpilar JSX en tiempo real en el navegador -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <!-- Aplicación React JS autónoma con Deduplicación y Registro de Actualizaciones -->
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    const STORAGE_KEY = 'controlsystem_fichas_react_v1';
+    const initialFichas = [
+      {
+        id: 'ficha_3145556',
+        numero: '3145556',
+        programa: 'ANALISIS Y DESARROLLO DE SOFTWARE',
+        codigo: '228118',
+        version: '1',
+        jornada: 'PRESENCIAL',
+        estado: 'EN EJECUCION',
+        fechaInicio: '2024-12-16',
+        fechaFin: '2027-05-07',
+        regional: '41 - REGIONAL HUILA',
+        centro: '9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS',
+        aprendices: [],
+        historialCargues: [],
+        reportes: [],
+        juicios: []
+      },
+      {
+        id: 'ficha_3145555',
+        numero: '3145555',
+        programa: 'ANALISIS Y DESARROLLO DE SOFTWARE',
+        codigo: '228118',
+        version: '1',
+        jornada: 'PRESENCIAL',
+        estado: 'EN EJECUCION',
+        fechaInicio: '2024-12-16',
+        fechaFin: '2027-05-07',
+        regional: '41 - REGIONAL HUILA',
+        centro: '9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS',
+        aprendices: [],
+        historialCargues: [],
+        reportes: [],
+        juicios: []
+      },
+      {
+        id: 'ficha_3239137',
+        numero: '3239137',
+        programa: 'ANALISIS Y DESARROLLO DE SOFTWARE',
+        codigo: '228118',
+        version: '1',
+        jornada: 'MIXTA',
+        estado: 'EN EJECUCION',
+        fechaInicio: '2024-10-01',
+        fechaFin: '2026-12-15',
+        regional: '41 - REGIONAL HUILA',
+        centro: '9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS',
+        aprendices: [],
+        historialCargues: [],
+        reportes: [],
+        juicios: []
+      }
+    ];
+
+    const getStoredFichas = () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (saved) {
+        try { return JSON.parse(saved); } catch (e) { }
+      }
+      return initialFichas;
+    };
+
+    const setStoredFichas = (fichas) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(fichas));
+    };
+
+    // Parser Excel con Deduplicación (1 Aprendiz -> N RAPs)
+    const parseExcel = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const sheet = workbook.Sheets[workbook.SheetNames[0]];
+            const rows = XLSX.utils.sheet_to_json(sheet, { header: 1, defval: "" });
+
+            const meta = {
+              filename: file.name,
+              fechaReporte: '',
+              numeroFicha: '',
+              codigoPrograma: '',
+              version: '',
+              denominacion: '',
+              estadoFicha: '',
+              fechaInicio: '',
+              fechaFin: '',
+              modalidad: '',
+              regional: '',
+              centro: ''
+            };
+
+            let headerRowIndex = 12;
+
+            for (let r = 0; r < Math.min(rows.length, 25); r++) {
+              const row = rows[r];
+              if (!row || row.length === 0) continue;
+              const colA = String(row[0] || '').trim().toLowerCase();
+              const colB = String(row[1] || '').trim();
+
+              if (colA.includes('fecha del reporte')) meta.fechaReporte = colB;
+              if (colA.includes('ficha de caracterizaci')) meta.numeroFicha = colB;
+              if (colA.includes('cógigo') || colA.includes('código')) meta.codigoPrograma = colB;
+              if (colA.includes('versión') || colA.includes('version')) meta.version = colB;
+              if (colA.includes('denominación') || colA.includes('denominacion')) meta.denominacion = colB;
+              if (colA.includes('estado de la ficha')) meta.estadoFicha = colB;
+              if (colA.includes('fecha inicio')) meta.fechaInicio = colB;
+              if (colA.includes('fecha fin')) meta.fechaFin = colB;
+              if (colA.includes('modalidad de formación')) meta.modalidad = colB;
+              if (colA.includes('regional')) meta.regional = colB;
+              if (colA.includes('centro de formación')) meta.centro = colB;
+
+              const rowStr = row.map(c => String(c).toLowerCase()).join(' ');
+              if (rowStr.includes('tipo de documento') || rowStr.includes('número de documento') || rowStr.includes('juicio de evaluación')) {
+                headerRowIndex = r;
+              }
+            }
+
+            const juicios = [];
+            const aprendicesMap = new Map();
+
+            for (let i = headerRowIndex + 1; i < rows.length; i++) {
+              const row = rows[i];
+              if (!row || row.length < 3) continue;
+
+              const tipoDoc = String(row[0] || '').trim();
+              const numDoc = String(row[1] || '').trim();
+              const nombre = String(row[2] || '').trim();
+              const apellidos = String(row[3] || '').trim();
+              const estadoApr = String(row[4] || '').trim();
+              const competencia = String(row[5] || '').trim();
+              const rap = String(row[6] || '').trim();
+
+              let juicioVal = String(row[7] || '').trim();
+              if (!juicioVal && row[8] && (String(row[8]).trim() === 'APROBADO' || String(row[8]).trim() === 'NO APROBADO')) {
+                juicioVal = String(row[8]).trim();
+              }
+
+              let juicioNormalizado = 'POR EVALUAR';
+              const jUpper = juicioVal.toUpperCase();
+              if (jUpper.includes('APROBADO') && !jUpper.includes('NO')) {
+                juicioNormalizado = 'APROBADO';
+              } else if (jUpper.includes('NO APROBADO') || jUpper.includes('DEFICIENTE')) {
+                juicioNormalizado = 'NO APROBADO';
+              }
+
+              const fechaHoraJuicio = String(row[8] || row[9] || '').trim();
+              const funcionario = String(row[9] || row[10] || '').trim();
+
+              if (numDoc) {
+                juicios.push({
+                  tipoDoc,
+                  numDoc,
+                  nombre,
+                  apellidos,
+                  estadoApr,
+                  competencia,
+                  rap,
+                  juicio: juicioNormalizado,
+                  fechaHoraJuicio,
+                  funcionario
+                });
+
+                // Deduplicación estricta por Documento
+                if (!aprendicesMap.has(numDoc)) {
+                  aprendicesMap.set(numDoc, {
+                    tipoDoc,
+                    numDoc,
+                    nombreCompleto: `${nombre} ${apellidos}`.trim(),
+                    nombre,
+                    apellidos,
+                    estado: estadoApr || 'EN FORMACION',
+                    raps: [],
+                    aprobados: 0,
+                    pendientes: 0,
+                    noAprobados: 0,
+                    totalRaps: 0
+                  });
+                }
+
+                const apr = aprendicesMap.get(numDoc);
+                apr.raps.push({
+                  competencia,
+                  rap,
+                  juicio: juicioNormalizado,
+                  fechaHora: fechaHoraJuicio,
+                  funcionario
+                });
+                apr.totalRaps++;
+
+                if (juicioNormalizado === 'APROBADO') apr.aprobados++;
+                else if (juicioNormalizado === 'NO APROBADO') apr.noAprobados++;
+                else apr.pendientes++;
+              }
+            }
+
+            resolve({
+              meta,
+              totalFilasExcel: juicios.length,
+              aprendices: Array.from(aprendicesMap.values()),
+              juicios
+            });
+          } catch (err) {
+            reject(err);
+          }
+        };
+        reader.readAsArrayBuffer(file);
+      });
+    };
+
+    function App() {
+      const [fichas, setFichas] = useState(getStoredFichas());
+      const [currentFichaId, setCurrentFichaId] = useState(null);
+      const [activeNav, setActiveNav] = useState('fichas');
+      const [search, setSearch] = useState('');
+      const [filterEstado, setFilterEstado] = useState('TODAS');
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [previewData, setPreviewData] = useState(null);
+      const [toast, setToast] = useState('');
+
+      useEffect(() => {
+        setStoredFichas(fichas);
+      }, [fichas]);
+
+      const showToast = (msg) => {
+        setToast(msg);
+        setTimeout(() => setToast(''), 4500);
+      };
+
+      const currentFicha = fichas.find(f => f.id === currentFichaId);
+
+      const totalFichas = fichas.length;
+      const totalAprendices = fichas.reduce((acc, f) => acc + (f.aprendices ? f.aprendices.length : 0), 0);
+      const fichasActivas = fichas.filter(f => f.estado === 'EN EJECUCION' || f.estado === 'ACTIVA').length;
+      const totalReportes = fichas.reduce((acc, f) => acc + (f.historialCargues ? f.historialCargues.length : (f.reportes ? f.reportes.length : 0)), 0);
+
+      const filteredFichas = fichas.filter(f => {
+        const matchEstado = filterEstado === 'TODAS' || f.estado === filterEstado;
+        const q = search.toLowerCase().trim();
+        const matchSearch = !q || f.numero.includes(q) || f.programa.toLowerCase().includes(q) || (f.centro && f.centro.toLowerCase().includes(q));
+        return matchEstado && matchSearch;
+      });
+
+      const handleSaveFicha = (e) => {
+        e.preventDefault();
+        const form = e.target;
+        const numero = form.numero.value.trim();
+        if (fichas.some(f => f.numero === numero)) {
+          alert(`La ficha ${numero} ya existe.`);
+          return;
+        }
+
+        const newF = {
+          id: 'ficha_' + numero,
+          numero,
+          programa: form.programa.value.trim(),
+          codigo: form.codigo.value.trim() || '228118',
+          version: '1',
+          jornada: form.jornada.value,
+          estado: form.estado.value,
+          fechaInicio: form.fechaInicio.value,
+          fechaFin: form.fechaFin.value,
+          regional: form.regional.value.trim(),
+          centro: form.centro.value.trim(),
+          aprendices: [],
+          historialCargues: [],
+          reportes: [],
+          juicios: []
+        };
+
+        setFichas([newF, ...fichas]);
+        setIsModalOpen(false);
+        showToast(`Ficha ${numero} creada exitosamente.`);
+      };
+
+      const handleExcelSelect = async (file) => {
+        try {
+          const parsed = await parseExcel(file);
+          setPreviewData(parsed);
+        } catch (err) {
+          alert("Error al leer el archivo Excel de SOFIA Plus.");
+        }
+      };
+
+      const handleConfirmImport = () => {
+        if (!previewData || !currentFicha) return;
+        const parsed = previewData;
+        const timestamp = new Date().toLocaleString();
+
+        let juiciosNuevosAprobados = 0;
+
+        const updated = fichas.map(f => {
+          if (f.id === currentFicha.id) {
+            const learnersMap = new Map();
+            (f.aprendices || []).forEach(apr => learnersMap.set(apr.numDoc, { ...apr, raps: [...(apr.raps || [])] }));
+
+            // Deduplicación e inserción/actualización única de aprendices
+            parsed.aprendices.forEach(inApr => {
+              if (!learnersMap.has(inApr.numDoc)) {
+                learnersMap.set(inApr.numDoc, inApr);
+              } else {
+                const existing = learnersMap.get(inApr.numDoc);
+                existing.nombre = inApr.nombre || existing.nombre;
+                existing.apellidos = inApr.apellidos || existing.apellidos;
+                existing.nombreCompleto = inApr.nombreCompleto || existing.nombreCompleto;
+                existing.estado = inApr.estado || existing.estado;
+
+                const existingRapsMap = new Map();
+                (existing.raps || []).forEach(r => existingRapsMap.set(r.rap, r));
+
+                inApr.raps.forEach(incomingRap => {
+                  if (existingRapsMap.has(incomingRap.rap)) {
+                    const curRap = existingRapsMap.get(incomingRap.rap);
+                    if (curRap.juicio !== 'APROBADO' && incomingRap.juicio === 'APROBADO') {
+                      juiciosNuevosAprobados++;
+                    }
+                    curRap.juicio = incomingRap.juicio;
+                    curRap.fechaHora = incomingRap.fechaHora || curRap.fechaHora;
+                    curRap.funcionario = incomingRap.funcionario || curRap.funcionario;
+                  } else {
+                    existingRapsMap.set(incomingRap.rap, incomingRap);
+                    if (incomingRap.juicio === 'APROBADO') juiciosNuevosAprobados++;
+                  }
+                });
+
+                const allRaps = Array.from(existingRapsMap.values());
+                existing.raps = allRaps;
+                existing.totalRaps = allRaps.length;
+                existing.aprobados = allRaps.filter(r => r.juicio === 'APROBADO').length;
+                existing.pendientes = allRaps.filter(r => r.juicio === 'POR EVALUAR').length;
+                existing.noAprobados = allRaps.filter(r => r.juicio === 'NO APROBADO').length;
+              }
+            });
+
+            const updatedLearners = Array.from(learnersMap.values());
+            const historial = f.historialCargues || [];
+            const numCargue = historial.length + 1;
+
+            const nuevoRegistroCargue = {
+              id: 'cargue_' + Date.now(),
+              numeroCargue: numCargue,
+              filename: parsed.meta.filename,
+              fechaReporte: parsed.meta.fechaReporte,
+              fechaCargue: timestamp,
+              totalFilasExcel: parsed.totalFilasExcel,
+              totalAprendicesAfectados: parsed.aprendices.length,
+              juiciosNuevosAprobados,
+              subidoPor: 'Carlos Julio Cadena (Instructor)',
+              observacion: `Cargue #${numCargue}: ${parsed.aprendices.length} aprendices únicos, ${juiciosNuevosAprobados} nuevos juicios aprobados.`
+            };
+
+            const consolidadoJuicios = [];
+            updatedLearners.forEach(apr => {
+              (apr.raps || []).forEach(r => {
+                consolidadoJuicios.push({
+                  tipoDoc: apr.tipoDoc,
+                  numDoc: apr.numDoc,
+                  nombre: apr.nombre,
+                  apellidos: apr.apellidos,
+                  estadoApr: apr.estado,
+                  competencia: r.competencia,
+                  rap: r.rap,
+                  juicio: r.juicio,
+                  fechaHoraJuicio: r.fechaHora,
+                  funcionario: r.funcionario
+                });
+              });
+            });
+
+            return {
+              ...f,
+              programa: parsed.meta.denominacion || f.programa,
+              centro: parsed.meta.centro || f.centro,
+              regional: parsed.meta.regional || f.regional,
+              aprendices: updatedLearners,
+              juicios: consolidadoJuicios,
+              historialCargues: [nuevoRegistroCargue, ...historial],
+              reportes: [nuevoRegistroCargue, ...(f.reportes || [])]
+            };
+          }
+          return f;
+        });
+
+        setFichas(updated);
+        setPreviewData(null);
+        showToast(`Cargue procesado: ${parsed.aprendices.length} aprendices únicos actualizados (${parsed.totalFilasExcel} filas deduplicadas).`);
+      };
+
+      return (
+        <div>
+          {/* Header */}
+          <header className="app-header">
+            <div className="header-container">
+              <div className="brand">
+                <div className="logo-box"><i className="ph ph-graduation-cap"></i></div>
+                <div>
+                  <h1>Sistema de Control de Instructores</h1>
+                  <span className="subtext">SENA — Regional Huila | CIES (React JS)</span>
+                </div>
+              </div>
+              <div className="user-info">
+                <div className="avatar"><i className="ph ph-user"></i></div>
+                <div className="user-details">
+                  <span className="user-name">Carlos Julio Cadena</span>
+                  <span className="user-role">Instructor Técnico ADSO</span>
+                </div>
+              </div>
+            </div>
+          </header>
+
+          {/* Navegación */}
+          <nav className="main-nav">
+            <div className="nav-container">
+              <button className={`nav-item ${activeNav === 'fichas' ? 'active' : ''}`} onClick={() => setActiveNav('fichas')}>
+                <i className="ph ph-folders"></i> Fichas de Formación
+              </button>
+              <button className={`nav-item ${activeNav === 'detalle' ? 'active' : ''}`} onClick={() => {
+                if (currentFichaId) setActiveNav('detalle');
+                else if (fichas.length > 0) { setCurrentFichaId(fichas[0].id); setActiveNav('detalle'); }
+              }}>
+                <i className="ph ph-file-arrow-up"></i> Juicios Evaluativos
+              </button>
+              <button className={`nav-item ${activeNav === 'asistente' ? 'active' : ''}`} onClick={() => setActiveNav('asistente')}>
+                <i className="ph ph-sparkle"></i> Asistente IA Reglamento
+              </button>
+            </div>
+          </nav>
+
+          <main className="app-main">
+            {activeNav === 'fichas' && (
+              <section className="view-section active">
+                <div className="metrics-grid">
+                  <div className="metric-card"><div className="metric-icon green"><i className="ph ph-chalkboard-teacher"></i></div><div className="metric-data"><span className="metric-number">{totalFichas}</span><span className="metric-label">Fichas Asignadas</span></div></div>
+                  <div className="metric-card"><div className="metric-icon blue"><i className="ph ph-users-three"></i></div><div className="metric-data"><span className="metric-number">{totalAprendices}</span><span className="metric-label">Aprendices Únicos</span></div></div>
+                  <div className="metric-card"><div className="metric-icon orange"><i className="ph ph-check-circle"></i></div><div className="metric-data"><span className="metric-number">{fichasActivas}</span><span className="metric-label">En Ejecución</span></div></div>
+                  <div className="metric-card"><div className="metric-icon purple"><i className="ph ph-files"></i></div><div className="metric-data"><span className="metric-number">{totalReportes}</span><span className="metric-label">Cargues Procesados</span></div></div>
+                </div>
+
+                <div className="action-bar">
+                  <div className="search-box">
+                    <i className="ph ph-magnifying-glass search-icon"></i>
+                    <input type="text" placeholder="Buscar ficha, programa o centro..." value={search} onChange={(e) => setSearch(e.target.value)} />
+                    {search && <button className="clear-btn" onClick={() => setSearch('')}><i className="ph ph-x"></i></button>}
+                  </div>
+                  <div className="filter-chips">
+                    {['TODAS', 'EN EJECUCION', 'ETAPA PRODUCTIVA', 'FINALIZADA'].map((st) => (
+                      <button key={st} className={`chip ${filterEstado === st ? 'active' : ''}`} onClick={() => setFilterEstado(st)}>
+                        {st === 'TODAS' ? 'Todas' : (st === 'EN EJECUCION' ? 'En Ejecución' : (st === 'ETAPA PRODUCTIVA' ? 'Etapa Productiva' : 'Finalizadas'))}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="btn btn-primary" onClick={() => setIsModalOpen(true)}><i className="ph ph-plus-circle"></i> Nueva Ficha</button>
+                </div>
+
+                <div className="fichas-grid">
+                  {filteredFichas.map(f => (
+                    <div key={f.id} className="ficha-card" onClick={() => { setCurrentFichaId(f.id); setActiveNav('detalle'); }}>
+                      <div className="ficha-card-header">
+                        <div className="ficha-number"><i className="ph ph-folder-notch-open"></i> Ficha {f.numero}</div>
+                        <span className={`badge ${f.estado.replace(/\s+/g, '.')}`}>{f.estado}</span>
+                      </div>
+                      <div className="ficha-program">{f.programa}</div>
+                      <div className="ficha-meta">
+                        <div className="ficha-meta-item"><i className="ph ph-clock"></i> <span>{f.jornada}</span></div>
+                        <div className="ficha-meta-item"><i className="ph ph-calendar"></i> <span>{f.fechaInicio} al {f.fechaFin}</span></div>
+                      </div>
+                      <div className="ficha-card-footer">
+                        <div className="learners-count"><i className="ph ph-users"></i> {f.aprendices ? f.aprendices.length : 0} Aprendices</div>
+                        <span className="enter-link">Gestionar <i className="ph ph-arrow-right"></i></span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </section>
+            )}
+
+            {activeNav === 'detalle' && currentFicha && (
+              <FichaDetailComponent ficha={currentFicha} onBack={() => setActiveNav('fichas')} onUploadExcel={handleExcelSelect} />
+            )}
+
+            {activeNav === 'asistente' && <AsistenteComponent />}
+          </main>
+
+          {/* Modal Nueva Ficha */}
+          {isModalOpen && (
+            <div className="modal-backdrop">
+              <div className="modal-dialog">
+                <div className="modal-header">
+                  <h3><i className="ph ph-plus-circle"></i> Registrar Nueva Ficha</h3>
+                  <button className="close-btn" onClick={() => setIsModalOpen(false)}><i className="ph ph-x"></i></button>
+                </div>
+                <form onSubmit={handleSaveFicha}>
+                  <div className="modal-body">
+                    <div className="form-row">
+                      <div className="form-group flex-1">
+                        <label>Número de Ficha *</label>
+                        <input name="numero" required placeholder="Ej: 3145556" pattern="[0-9]{6,10}" />
+                      </div>
+                      <div className="form-group flex-1">
+                        <label>Código Programa</label>
+                        <input name="codigo" defaultValue="228118" />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label>Denominación del Programa *</label>
+                      <input name="programa" required defaultValue="ANALISIS Y DESARROLLO DE SOFTWARE" />
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group flex-1">
+                        <label>Jornada *</label>
+                        <select name="jornada">
+                          <option value="PRESENCIAL">Presencial (Diurna)</option>
+                          <option value="MIXTA">Mixta / Nocturna</option>
+                          <option value="VIRTUAL">Virtual</option>
+                        </select>
+                      </div>
+                      <div className="form-group flex-1">
+                        <label>Estado *</label>
+                        <select name="estado">
+                          <option value="EN EJECUCION">EN EJECUCION</option>
+                          <option value="ETAPA PRODUCTIVA">ETAPA PRODUCTIVA</option>
+                          <option value="FINALIZADA">FINALIZADA</option>
+                        </select>
+                      </div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group flex-1"><label>Fecha Inicio</label><input type="date" name="fechaInicio" defaultValue="2024-12-16" /></div>
+                      <div className="form-group flex-1"><label>Fecha Fin</label><input type="date" name="fechaFin" defaultValue="2027-05-07" /></div>
+                    </div>
+                    <div className="form-row">
+                      <div className="form-group flex-1"><label>Regional</label><input name="regional" defaultValue="41 - REGIONAL HUILA" /></div>
+                      <div className="form-group flex-1"><label>Centro de Formación</label><input name="centro" defaultValue="9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS" /></div>
+                    </div>
+                  </div>
+                  <div className="modal-footer">
+                    <button type="button" className="btn btn-secondary" onClick={() => setIsModalOpen(false)}>Cancelar</button>
+                    <button type="submit" className="btn btn-primary"><i className="ph ph-floppy-disk"></i> Guardar Ficha</button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Preview Reporte Excel con Deduplicación */}
+          {previewData && (
+            <div className="modal-backdrop">
+              <div className="modal-dialog modal-lg">
+                <div className="modal-header">
+                  <div>
+                    <h3><i className="ph ph-file-magnifying-glass"></i> Previsualización y Control de Actualización (SOFIA Plus)</h3>
+                    <span style={{ fontSize: '0.8rem', color: '#059669', fontWeight: '700' }}>
+                      <i className="ph ph-shield-check"></i> Deduplicación activa: {previewData.aprendices.length} aprendices únicos detectados (~{(previewData.totalFilasExcel / previewData.aprendices.length).toFixed(0)} RAPs/aprendiz)
+                    </span>
+                  </div>
+                  <button className="close-btn" onClick={() => setPreviewData(null)}><i className="ph ph-x"></i></button>
+                </div>
+                <div className="modal-body">
+                  <div className="preview-meta-box">
+                    <div className="preview-meta-item"><span>Ficha</span><span>{previewData.meta.numeroFicha || currentFicha.numero}</span></div>
+                    <div className="preview-meta-item"><span>Fecha Reporte</span><span>{previewData.meta.fechaReporte || 'N/A'}</span></div>
+                    <div className="preview-meta-item"><span>Programa</span><span>{previewData.meta.denominacion || currentFicha.programa}</span></div>
+                    <div className="preview-meta-item"><span>Centro</span><span>{previewData.meta.centro || currentFicha.centro}</span></div>
+                  </div>
+                  <div className="preview-stats-row">
+                    <div className="preview-stat-card" style={{ borderLeft: '3px solid #3b82f6' }}><strong style={{ color: 'var(--secondary)' }}>{previewData.aprendices.length}</strong><span>Aprendices Únicos</span></div>
+                    <div className="preview-stat-card" style={{ borderLeft: '3px solid #10b981' }}><strong style={{ color: '#059669' }}>{previewData.juicios.filter(j=>j.juicio==='APROBADO').length}</strong><span>Juicios Aprobados</span></div>
+                    <div className="preview-stat-card" style={{ borderLeft: '3px solid #f59e0b' }}><strong style={{ color: '#d97706' }}>{previewData.juicios.filter(j=>j.juicio==='POR EVALUAR').length}</strong><span>Por Evaluar</span></div>
+                    <div className="preview-stat-card" style={{ borderLeft: '3px solid #64748b' }}><strong style={{ color: '#475569' }}>{previewData.totalFilasExcel}</strong><span>Total Filas Excel</span></div>
+                  </div>
+                  <div className="preview-notice" style={{ background: '#ecfdf5', borderColor: '#a7f3d0', color: '#065f46' }}>
+                    <i className="ph ph-check-circle" style={{ fontSize: '1.4rem' }}></i>
+                    <div>
+                      <strong>Regla de registro único garantizada:</strong>
+                      <div>El archivo contiene {previewData.totalFilasExcel} filas porque cada aprendiz se lista una vez por cada RAP. El sistema registrará <strong>únicamente {previewData.aprendices.length} aprendices</strong> y actualizará el historial del cargue.</div>
+                    </div>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button type="button" className="btn btn-secondary" onClick={() => setPreviewData(null)}>Descartar</button>
+                  <button type="button" className="btn btn-success" onClick={handleConfirmImport}><i className="ph ph-check"></i> Confirmar y Aplicar Actualización</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {toast && (
+            <div className="toast">
+              <i className="ph ph-check-circle toast-icon"></i>
+              <span>{toast}</span>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    function FichaDetailComponent({ ficha, onBack, onUploadExcel }) {
+      const [tab, setTab] = useState('juicios');
+      const [filter, setFilter] = useState('TODOS');
+      const [selectedLearner, setSelectedLearner] = useState(null);
+
+      const juicios = ficha.juicios || [];
+      const aprendices = ficha.aprendices || [];
+      const historial = ficha.historialCargues || ficha.reportes || [];
+
+      const aprobados = juicios.filter(j => j.juicio === 'APROBADO').length;
+      const pendientes = juicios.filter(j => j.juicio === 'POR EVALUAR').length;
+      const noAprobados = juicios.filter(j => j.juicio === 'NO APROBADO').length;
+      const pct = juicios.length > 0 ? ((aprobados / juicios.length) * 100).toFixed(1) : 0;
+
+      const filtered = juicios.filter(j => {
+        if (filter === 'TODOS') return true;
+        if (filter === 'APROBADO') return j.juicio === 'APROBADO';
+        if (filter === 'PENDIENTE') return j.juicio === 'POR EVALUAR';
+        if (filter === 'NO APROBADO') return j.juicio === 'NO APROBADO';
+        return true;
+      });
+
+      return (
+        <section className="view-section active">
+          <div className="detail-header">
+            <button className="btn btn-secondary back-btn" onClick={onBack}>
+              <i className="ph ph-arrow-left"></i> Volver a Fichas
+            </button>
+            <div className="detail-title-box">
+              <div className="tag-row">
+                <span className={`badge ${ficha.estado.replace(/\s+/g, '.')}`}>{ficha.estado}</span>
+                <span className="code-tag">Código: {ficha.codigo} v.{ficha.version || 1}</span>
+                <span className="code-tag" style={{ background: '#ecfdf5', color: '#065f46' }}>
+                  <i className="ph ph-shield-check"></i> 1 Registro Único por Aprendiz
+                </span>
+              </div>
+              <h2>Ficha {ficha.numero}</h2>
+              <p>{ficha.programa}</p>
+            </div>
+            <div className="detail-actions">
+              <button className="btn btn-success" onClick={() => document.getElementById('fileInp').click()}>
+                <i className="ph ph-microsoft-excel-logo"></i> Cargar Reporte SOFIA Plus (.xls)
+              </button>
+              <input id="fileInp" type="file" accept=".xls,.xlsx" style={{ display: 'none' }} onChange={(e) => {
+                if (e.target.files[0]) onUploadExcel(e.target.files[0]);
+                e.target.value = '';
+              }} />
+            </div>
+          </div>
+
+          <div className="tab-bar">
+            <button className={`tab-btn ${tab === 'juicios' ? 'active' : ''}`} onClick={() => setTab('juicios')}>
+              <i className="ph ph-file-text"></i> Juicios Evaluativos y Cargues ({historial.length})
+            </button>
+            <button className={`tab-btn ${tab === 'aprendices' ? 'active' : ''}`} onClick={() => setTab('aprendices')}>
+              <i className="ph ph-users"></i> Listado de Aprendices Únicos ({aprendices.length})
+            </button>
+            <button className={`tab-btn ${tab === 'info' ? 'active' : ''}`} onClick={() => setTab('info')}>
+              <i className="ph ph-info"></i> Información de Caracterización
+            </button>
+          </div>
+
+          {tab === 'juicios' && (
+            <div className="tab-content active">
+              <div className="upload-dropzone" onClick={() => document.getElementById('fileInp').click()}>
+                <i className="ph ph-cloud-arrow-up drop-icon"></i>
+                <h3>Arrastra aquí el archivo Excel (.xls / .xlsx) de Juicios de Evaluación</h3>
+                <p>El sistema agrupa automáticamente los ~75 RAPs por aprendiz en un único registro y actualiza el historial.</p>
+                <div className="format-badge">Estructura oficial: Cabecera Filas 1-12 + Matriz de RAPs Fila 13+</div>
+              </div>
+
+              {juicios.length > 0 && (
+                <div className="stats-overview">
+                  <div className="stat-pill green"><i className="ph ph-check-fat"></i><div><strong>{aprobados}</strong><span>Aprobados</span></div></div>
+                  <div className="stat-pill yellow"><i className="ph ph-hourglass-medium"></i><div><strong>{pendientes}</strong><span>Por Evaluar</span></div></div>
+                  <div className="stat-pill red"><i className="ph ph-x-circle"></i><div><strong>{noAprobados}</strong><span>No Aprobados</span></div></div>
+                  <div className="stat-pill blue"><i className="ph ph-chart-pie"></i><div><strong>{pct}%</strong><span>Avance Global</span></div></div>
+                </div>
+              )}
+
+              {/* Historial de Cargues */}
+              <div className="section-title-row">
+                <h3><i className="ph ph-clock-counter-clockwise"></i> Registro de Cargues y Actualizaciones</h3>
+                <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Trazabilidad cronológica de cada reporte procesado</span>
+              </div>
+
+              {historial.length === 0 ? (
+                <div style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '1.5rem', background: 'white', borderRadius: 'var(--radius-md)', border: '1px dashed var(--border)', marginBottom: '1.5rem' }}>
+                  <i className="ph ph-file-dashed" style={{ fontSize: '2rem' }}></i>
+                  <p style={{ marginTop: '0.5rem' }}>No se han registrado cargues de juicios para esta ficha.</p>
+                </div>
+              ) : (
+                <div className="reports-history-list" style={{ marginBottom: '1.5rem' }}>
+                  {historial.map((cargue, idx) => (
+                    <div key={idx} className="report-item" style={{ borderLeft: '4px solid var(--primary)' }}>
+                      <div className="report-item-left">
+                        <div className="report-item-icon"><i className="ph ph-file-xls"></i></div>
+                        <div>
+                          <div className="report-item-title" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                            <span>{cargue.filename}</span>
+                            <span className="badge" style={{ background: '#f1f5f9', color: '#1e293b' }}>
+                              Cargue #{cargue.numeroCargue || (historial.length - idx)}
+                            </span>
+                          </div>
+                          <div className="report-item-meta">
+                            <span>Fecha Reporte: {cargue.fechaReporte || 'N/A'}</span>
+                            <span>Actualizado: {cargue.fechaCargue}</span>
+                            <span>{cargue.subidoPor || 'Instructor'}</span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="report-stats-tags">
+                        <span className="tag-stat green">
+                          <i className="ph ph-arrow-up-right"></i> {cargue.juiciosNuevosAprobados !== undefined ? `+${cargue.juiciosNuevosAprobados} Aprobados` : `${cargue.aprobados} Aprobados`}
+                        </span>
+                        <span className="tag-stat yellow">{cargue.pendientes !== undefined ? cargue.pendientes : 0} Pendientes</span>
+                        <span className="tag-stat" style={{ background: '#f1f5f9' }}>
+                          <strong>{cargue.totalAprendicesAfectados || cargue.totalAprendices}</strong> Aprendices únicos
+                          {cargue.totalFilasExcel ? ` (${cargue.totalFilasExcel} filas)` : ''}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {juicios.length > 0 && (
+                <div className="table-container">
+                  <div className="table-header-info">
+                    <h4><i className="ph ph-table"></i> Matriz Consolidada de Juicios por Resultado de Aprendizaje</h4>
+                    <select value={filter} onChange={(e) => setFilter(e.target.value)}>
+                      <option value="TODOS">Todos</option>
+                      <option value="APROBADO">Aprobados</option>
+                      <option value="PENDIENTE">Por Evaluar</option>
+                      <option value="NO APROBADO">No Aprobados</option>
+                    </select>
+                  </div>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th>Tipo</th>
+                        <th>Documento</th>
+                        <th>Aprendiz</th>
+                        <th>Competencia Laboral</th>
+                        <th>Resultado de Aprendizaje (RAP)</th>
+                        <th>Juicio</th>
+                        <th>Fecha Registro</th>
+                        <th>Funcionario</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filtered.slice(0, 100).map((j, i) => (
+                        <tr key={i}>
+                          <td><span className="code-tag">{j.tipoDoc || 'CC'}</span></td>
+                          <td><strong>{j.numDoc}</strong></td>
+                          <td>{j.nombre} {j.apellidos}</td>
+                          <td style={{ maxWidth: '240px' }}><small>{j.competencia}</small></td>
+                          <td style={{ maxWidth: '280px' }}><small>{j.rap}</small></td>
+                          <td>
+                            <span className={`judgment-badge ${j.juicio === 'APROBADO' ? 'aprobado' : (j.juicio === 'NO APROBADO' ? 'no-aprobado' : 'pendiente')}`}>
+                              {j.juicio}
+                            </span>
+                          </td>
+                          <td><small>{j.fechaHoraJuicio || '-'}</small></td>
+                          <td><small>{j.funcionario || 'SISTEMA'}</small></td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          )}
+
+          {tab === 'aprendices' && (
+            <div className="tab-content active">
+              <div className="table-container">
+                <div className="table-header-info">
+                  <div>
+                    <h4><i className="ph ph-users-three"></i> Aprendices de la Ficha ({aprendices.length} Registros Únicos)</h4>
+                    <small style={{ color: 'var(--text-secondary)' }}>Cada persona se registra exactamente una vez, agrupando sus RAPs correspondientes.</small>
+                  </div>
+                </div>
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Tipo</th>
+                      <th>Documento</th>
+                      <th>Nombres y Apellidos</th>
+                      <th>Estado</th>
+                      <th>Progreso RAPs Aprobados</th>
+                      <th>Pendientes</th>
+                      <th>Detalle</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {aprendices.length === 0 ? (
+                      <tr><td colSpan="7" style={{ textAlign: 'center', padding: '2rem', color: 'var(--text-muted)' }}>No hay aprendices registrados aún. Carga un reporte Excel de SOFIA Plus.</td></tr>
+                    ) : (
+                      aprendices.map((apr, idx) => {
+                        const totalRaps = apr.totalRaps || (apr.raps ? apr.raps.length : 0);
+                        const pctApr = totalRaps > 0 ? ((apr.aprobados / totalRaps) * 100).toFixed(0) : 0;
+                        return (
+                          <tr key={idx}>
+                            <td><span className="code-tag">{apr.tipoDoc || 'CC'}</span></td>
+                            <td><strong>{apr.numDoc}</strong></td>
+                            <td><strong>{apr.nombreCompleto}</strong></td>
+                            <td><span className="badge green">{apr.estado || 'EN FORMACION'}</span></td>
+                            <td style={{ minWidth: '180px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                <div style={{ flex: 1, height: '8px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
+                                  <div style={{ width: `${pctApr}%`, height: '100%', background: '#10b981' }}></div>
+                                </div>
+                                <span style={{ fontSize: '0.8rem', fontWeight: '700', color: '#065f46' }}>
+                                  {apr.aprobados}/{totalRaps} ({pctApr}%)
+                                </span>
+                              </div>
+                            </td>
+                            <td><span style={{ color: '#d97706', fontWeight: '700' }}>{apr.pendientes}</span></td>
+                            <td>
+                              <button className="btn btn-secondary" style={{ padding: '0.35rem 0.7rem', fontSize: '0.78rem' }} onClick={() => setSelectedLearner(apr)}>
+                                <i className="ph ph-list-checks"></i> Ver RAPs ({totalRaps})
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {tab === 'info' && (
+            <div className="tab-content active">
+              <div className="metrics-grid">
+                <div className="metric-card"><div className="metric-icon green"><i className="ph ph-hash"></i></div><div className="metric-data"><span className="metric-number">{ficha.numero}</span><span className="metric-label">Número Ficha</span></div></div>
+                <div className="metric-card"><div className="metric-icon blue"><i className="ph ph-certificate"></i></div><div className="metric-data"><span className="metric-number">{ficha.codigo}</span><span className="metric-label">Código Programa</span></div></div>
+                <div className="metric-card"><div className="metric-icon orange"><i className="ph ph-buildings"></i></div><div className="metric-data"><span className="metric-number" style={{ fontSize: '1.1rem' }}>{ficha.regional}</span><span className="metric-label">{ficha.centro}</span></div></div>
+              </div>
+            </div>
+          )}
+
+          {/* Modal Ver RAPs del Aprendiz */}
+          {selectedLearner && (
+            <div className="modal-backdrop">
+              <div className="modal-dialog modal-lg">
+                <div className="modal-header">
+                  <div>
+                    <h3><i className="ph ph-user"></i> {selectedLearner.nombreCompleto}</h3>
+                    <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>{selectedLearner.tipoDoc} {selectedLearner.numDoc} | Estado: {selectedLearner.estado}</span>
+                  </div>
+                  <button className="close-btn" onClick={() => setSelectedLearner(null)}><i className="ph ph-x"></i></button>
+                </div>
+                <div className="modal-body">
+                  <div className="preview-stats-row" style={{ marginBottom: '1rem' }}>
+                    <div className="preview-stat-card"><strong style={{ color: 'var(--secondary)' }}>{selectedLearner.totalRaps || selectedLearner.raps.length}</strong><span>Total RAPs Programa</span></div>
+                    <div className="preview-stat-card"><strong style={{ color: '#059669' }}>{selectedLearner.aprobados}</strong><span>Aprobados</span></div>
+                    <div className="preview-stat-card"><strong style={{ color: '#d97706' }}>{selectedLearner.pendientes}</strong><span>Por Evaluar</span></div>
+                    <div className="preview-stat-card"><strong style={{ color: '#dc2626' }}>{selectedLearner.noAprobados}</strong><span>No Aprobados</span></div>
+                  </div>
+                  <div className="table-container">
+                    <table className="data-table">
+                      <thead>
+                        <tr><th>Competencia</th><th>Resultado de Aprendizaje (RAP)</th><th>Juicio</th><th>Fecha</th><th>Funcionario</th></tr>
+                      </thead>
+                      <tbody>
+                        {(selectedLearner.raps || []).map((r, i) => (
+                          <tr key={i}>
+                            <td style={{ maxWidth: '240px' }}><small>{r.competencia}</small></td>
+                            <td style={{ maxWidth: '280px' }}><small>{r.rap}</small></td>
+                            <td><span className={`judgment-badge ${r.juicio === 'APROBADO' ? 'aprobado' : (r.juicio === 'NO APROBADO' ? 'no-aprobado' : 'pendiente')}`}>{r.juicio}</span></td>
+                            <td><small>{r.fechaHora || '-'}</small></td>
+                            <td><small>{r.funcionario || 'SISTEMA'}</small></td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+                <div className="modal-footer">
+                  <button className="btn btn-secondary" onClick={() => setSelectedLearner(null)}>Cerrar</button>
+                </div>
+              </div>
+            </div>
+          )}
+        </section>
+      );
+    }
+
+    function AsistenteComponent() {
+      const [msgs, setMsgs] = useState([
+        { role: 'bot', text: '¡Hola, instructor! Soy tu asistente pedagógico para consultar el <strong>Reglamento del Aprendiz SENA (Acuerdo 007 de 2012)</strong>. Pregúntame sobre inasistencias (Art. 22), comités de evaluación (Art. 29) o derechos de los aprendices.' }
+      ]);
+      const [input, setInput] = useState('');
+
+      const send = () => {
+        if (!input.trim()) return;
+        const q = input.trim();
+        const next = [...msgs, { role: 'user', text: q }];
+        setMsgs(next);
+        setInput('');
+
+        setTimeout(() => {
+          let ans = 'Basado en el <strong>Reglamento del Aprendiz SENA</strong>: Toda medida formativa garantiza el debido proceso y la trazabilidad de los juicios evaluativos en SOFIA Plus / Zajuna.';
+          const qLow = q.toLowerCase();
+          if (qLow.includes('inasistencia') || qLow.includes('asistencia') || qLow.includes('falta')) {
+            ans = 'De acuerdo con el <strong>Artículo 22 del Reglamento del Aprendiz SENA</strong>: Las inasistencias deben ser justificadas ante el instructor dentro de los <strong>tres (3) días hábiles siguientes</strong>. Si acumula inasistencias injustificadas continuas, se inicia trámite de deserción.';
+          } else if (qLow.includes('comite') || qLow.includes('comité')) {
+            ans = 'Conforme al <strong>Artículo 29 del Reglamento</strong>: El Comité de Evaluación y Seguimiento asesora al Subdirector de Centro para analizar el rendimiento y recomendar planes de mejoramiento o medidas disciplinarias.';
+          } else if (qLow.includes('derecho')) {
+            ans = 'Según el <strong>Artículo 7 del Reglamento</strong>: El aprendiz tiene derecho a formación de calidad, uso de ambientes y herramientas TIC, y conocer oportunamente sus juicios evaluativos.';
+          }
+          setMsgs([...next, { role: 'bot', text: ans }]);
+        }, 400);
+      };
+
+      return (
+        <section className="view-section active">
+          <div className="chat-container">
+            <div className="chat-header">
+              <div className="chat-header-info">
+                <i className="ph ph-robot chat-avatar"></i>
+                <div>
+                  <h3>Asistente IA — Reglamento del Aprendiz SENA</h3>
+                  <span>Consultas semánticas y citas normativas (React JS)</span>
+                </div>
+              </div>
+              <span className="badge blue">Acuerdo Vigente</span>
+            </div>
+            <div className="chat-messages">
+              {msgs.map((m, i) => (
+                <div key={i} className={`message ${m.role}`}>
+                  {m.role === 'bot' && <i className="ph ph-robot message-icon"></i>}
+                  <div className="message-bubble" dangerouslySetInnerHTML={{ __html: m.text }}></div>
+                </div>
+              ))}
+            </div>
+            <div className="chat-input-area">
+              <input value={input} onChange={(e) => setInput(e.target.value)} onKeyPress={(e) => e.key === 'Enter' && send()} placeholder="Escribe tu consulta sobre el reglamento..." />
+              <button className="btn btn-primary" onClick={send}><i className="ph ph-paper-plane-right"></i></button>
+            </div>
+          </div>
+        </section>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
