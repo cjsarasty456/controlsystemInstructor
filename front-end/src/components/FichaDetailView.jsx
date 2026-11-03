@@ -108,7 +108,14 @@ export default function FichaDetailView({
 
   const juicios = ficha.juicios || [];
   const aprendices = ficha.aprendices || [];
-  const activeProject = ficha.reporteProyecto || DEFAULT_ADSO_PROJECT;
+  let activeProject = ficha.reporteProyecto || DEFAULT_ADSO_PROJECT;
+  if (typeof activeProject === 'string') {
+    try {
+      activeProject = JSON.parse(activeProject);
+    } catch (e) {
+      activeProject = DEFAULT_ADSO_PROJECT;
+    }
+  }
 
   // Población de aprendices "EN FORMACIÓN" exclusivamente
   const aprendicesEnFormacion = useMemo(() => {

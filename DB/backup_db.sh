@@ -25,3 +25,4 @@ gzip -k -f "$BACKUP_FILE"
 echo "✓ Respaldo generado con éxito:"
 ls -lh "$BACKUP_FILE" "$BACKUP_GZ"
 echo "=== COPIA DE SEGURIDAD COMPLETADA EXITOSAMENTE ==="
+

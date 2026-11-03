@@ -36,3 +36,4 @@ echo "=== RESTAURACIÓN COMPLETADA EXITOSAMENTE ==="
 psql -h localhost -U postgres -d controlsystem_db -c "SELECT count(*) AS total_fichas FROM fichas;"
 psql -h localhost -U postgres -d controlsystem_db -c "SELECT count(*) AS total_aprendices FROM aprendices;"
 psql -h localhost -U postgres -d controlsystem_db -c "SELECT count(*) AS total_juicios FROM juicios_evaluativos_detalle;"
+
