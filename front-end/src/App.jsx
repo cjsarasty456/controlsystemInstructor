@@ -16,6 +16,7 @@ import {
   saveProjectReportApi 
 } from './services/apiService';
 import { DEFAULT_ADSO_PROJECT } from './services/projectReportService';
+import { generateUUID } from './utils/uuid';
 
 export default function App() {
   const [fichas, setFichas] = useState([]);
@@ -47,7 +48,7 @@ export default function App() {
               const detail = await fetchFichaDetailApi(bf.numero || bf.id);
               return {
                 ...detail,
-                id: 'ficha_' + bf.numero,
+                id: bf.id || generateUUID(),
                 backendId: bf.id,
                 reporteProyecto: parsedProject,
                 aprendices: detail.aprendices || [],
@@ -57,7 +58,7 @@ export default function App() {
             } catch (err) {
               return {
                 ...bf,
-                id: 'ficha_' + bf.numero,
+                id: bf.id || generateUUID(),
                 backendId: bf.id,
                 reporteProyecto: parsedProject
               };
@@ -173,9 +174,10 @@ export default function App() {
       }
     }
 
+    const fichaUUID = backendId || generateUUID();
     const newFicha = {
-      id: 'ficha_' + newFichaData.numero,
-      backendId,
+      id: fichaUUID,
+      backendId: fichaUUID,
       ...newFichaData,
       reporteProyecto: newFichaData.reporteProyecto !== undefined
         ? newFichaData.reporteProyecto
@@ -317,7 +319,7 @@ export default function App() {
         const consecutivo = historial.length + 1;
 
         const nuevoRegistroCargue = {
-          id: 'cargue_' + Date.now(),
+          id: generateUUID(),
           numeroCargue: consecutivo,
           filename: parsed.meta.filename || 'Reporte_Juicios_SOFIA.xlsx',
           fechaReporte: parsed.meta.fechaReporte || 'N/A',
@@ -521,6 +523,7 @@ export default function App() {
         isOpen={isFichaModalOpen}
         onClose={() => setIsFichaModalOpen(false)}
         onSave={handleSaveFicha}
+        fichas={fichas}
       />
 
       <PreviewReportModal 

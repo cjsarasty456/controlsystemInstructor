@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +33,7 @@ public class ReglamentoService {
     }
 
     @Transactional(readOnly = true)
-    public List<EvaluacionDTO> getEvaluacionesPorFicha(Long fichaId) {
+    public List<EvaluacionDTO> getEvaluacionesPorFicha(UUID fichaId) {
         return evaluacionRepository.findByFichaIdOrderByFechaEvaluacionDesc(fichaId).stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
@@ -83,4 +84,3 @@ public class ReglamentoService {
         return dto;
     }
 }
-

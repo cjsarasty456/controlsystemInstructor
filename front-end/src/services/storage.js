@@ -1,4 +1,5 @@
 import { DEFAULT_ADSO_PROJECT } from './projectReportService';
+import { generateUUID, isUUID } from '../utils/uuid';
 
 /**
  * Servicio de almacenamiento local para React
@@ -53,6 +54,7 @@ export const createSampleLearnersAndJuicios = () => {
       }
 
       const rapEntry = {
+        id: generateUUID(),
         competencia: pRap.competencia,
         rap: pRap.rap,
         juicio,
@@ -62,6 +64,7 @@ export const createSampleLearnersAndJuicios = () => {
       learnerRaps.push(rapEntry);
 
       consolidadoJuicios.push({
+        id: generateUUID(),
         tipoDoc: meta.tipoDoc,
         numDoc: meta.numDoc,
         nombre: meta.nombre,
@@ -77,6 +80,7 @@ export const createSampleLearnersAndJuicios = () => {
     });
 
     aprendices.push({
+      id: generateUUID(),
       tipoDoc: meta.tipoDoc,
       numDoc: meta.numDoc,
       nombre: meta.nombre,
@@ -98,7 +102,7 @@ const sampleSeed = createSampleLearnersAndJuicios();
 
 export const initialFichasData = [
   {
-    id: 'ficha_3145556',
+    id: 'a3f89b41-76c2-4e01-9a2c-9828e1240001',
     numero: '3145556',
     programa: 'ANALISIS Y DESARROLLO DE SOFTWARE',
     codigo: '228118',
@@ -113,7 +117,7 @@ export const initialFichasData = [
     aprendices: sampleSeed.aprendices,
     reportes: [
       {
-        id: 'cargue_init_1',
+        id: 'b5d7e823-11a4-4f92-b678-8319f0410001',
         numeroCargue: 1,
         filename: 'Reporte_Juicios_3145556_Oficial.xls',
         fechaReporte: '02/11/2026',
@@ -130,7 +134,7 @@ export const initialFichasData = [
     juicios: sampleSeed.consolidadoJuicios
   },
   {
-    id: 'ficha_3145555',
+    id: 'a3f89b41-76c2-4e01-9a2c-9828e1240002',
     numero: '3145555',
     programa: 'ANALISIS Y DESARROLLO DE SOFTWARE',
     codigo: '228118',
@@ -147,7 +151,7 @@ export const initialFichasData = [
     juicios: []
   },
   {
-    id: 'ficha_3239137',
+    id: 'a3f89b41-76c2-4e01-9a2c-9828e1240003',
     numero: '3239137',
     programa: 'ANALISIS Y DESARROLLO DE SOFTWARE',
     codigo: '228118',
@@ -171,18 +175,31 @@ export const loadFichas = () => {
     try {
       const parsed = JSON.parse(saved);
       return parsed.map(f => {
-        // Si la ficha no tiene aprendices y es la 3145556, inyectar aprendices semilla para pruebas inmediatas
-        if ((!f.aprendices || f.aprendices.length === 0) && f.numero === '3145556') {
+        // Asegurar que toda ficha tenga ID en formato UUID
+        const fichaUUID = isUUID(f.id) ? f.id : (f.backendId && isUUID(f.backendId) ? f.backendId : generateUUID());
+
+        // Sanitizar aprendices corruptos (ej: si anteriormente se cargó con numDoc === 'CC' o numDoc === tipoDoc o totalRaps anormal)
+        const aprendicesValidos = (f.aprendices || []).filter(a => {
+          const num = String(a.numDoc || '').trim().toUpperCase();
+          const tipo = String(a.tipoDoc || '').trim().toUpperCase();
+          return num !== '' && num !== 'CC' && num !== 'TI' && num !== 'CE' && num !== tipo && (a.totalRaps || 0) < 500;
+        });
+
+        // Si la ficha no tiene aprendices válidos y es la 3145556, inyectar aprendices semilla para pruebas inmediatas
+        if (aprendicesValidos.length === 0 && f.numero === '3145556') {
           return {
             ...f,
+            id: fichaUUID,
             reporteProyecto: f.reporteProyecto || DEFAULT_ADSO_PROJECT,
             aprendices: sampleSeed.aprendices,
-            juicios: f.juicios && f.juicios.length > 0 ? f.juicios : sampleSeed.consolidadoJuicios,
+            juicios: sampleSeed.consolidadoJuicios,
             reportes: f.reportes && f.reportes.length > 0 ? f.reportes : initialFichasData[0].reportes
           };
         }
         return {
           ...f,
+          id: fichaUUID,
+          aprendices: aprendicesValidos,
           reporteProyecto: f.reporteProyecto || DEFAULT_ADSO_PROJECT
         };
       });

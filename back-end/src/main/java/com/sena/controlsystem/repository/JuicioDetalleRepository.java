@@ -8,16 +8,16 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 @Repository
-public interface JuicioDetalleRepository extends JpaRepository<JuicioDetalleEntity, Long> {
-    List<JuicioDetalleEntity> findByFichaId(Long fichaId);
-    List<JuicioDetalleEntity> findByAprendizId(Long fichaId);
-    Optional<JuicioDetalleEntity> findByAprendizIdAndResultadoAprendizaje(Long aprendizId, String resultadoAprendizaje);
+public interface JuicioDetalleRepository extends JpaRepository<JuicioDetalleEntity, UUID> {
+    List<JuicioDetalleEntity> findByFichaId(UUID fichaId);
+    List<JuicioDetalleEntity> findByAprendizId(UUID aprendizId);
+    Optional<JuicioDetalleEntity> findByAprendizIdAndResultadoAprendizaje(UUID aprendizId, String resultadoAprendizaje);
 
     @Query("SELECT j FROM JuicioDetalleEntity j JOIN FETCH j.aprendiz a WHERE j.ficha.id = :fichaId")
-    List<JuicioDetalleEntity> findAllWithAprendizByFichaId(@Param("fichaId") Long fichaId);
+    List<JuicioDetalleEntity> findAllWithAprendizByFichaId(@Param("fichaId") UUID fichaId);
 
-    long countByFichaIdAndJuicioEvaluacion(Long fichaId, String juicioEvaluacion);
+    long countByFichaIdAndJuicioEvaluacion(UUID fichaId, String juicioEvaluacion);
 }
-

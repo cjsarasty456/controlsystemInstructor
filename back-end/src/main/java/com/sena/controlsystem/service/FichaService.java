@@ -49,14 +49,15 @@ public class FichaService {
 
     @Transactional(readOnly = true)
     public Optional<FichaResponseDTO> getFichaByNumeroOrId(String identifier) {
-        Optional<FichaEntity> fichaOpt;
+        Optional<FichaEntity> fichaOpt = Optional.empty();
         try {
-            Long id = Long.parseLong(identifier);
+            UUID id = UUID.fromString(identifier);
             fichaOpt = fichaRepository.findById(id);
-            if (fichaOpt.isEmpty()) {
-                fichaOpt = fichaRepository.findByNumeroFicha(identifier);
-            }
-        } catch (NumberFormatException e) {
+        } catch (IllegalArgumentException ignored) {
+            // No es UUID válido, se busca por número de ficha
+        }
+
+        if (fichaOpt.isEmpty()) {
             fichaOpt = fichaRepository.findByNumeroFicha(identifier);
         }
 
@@ -64,7 +65,7 @@ public class FichaService {
     }
 
     @Transactional
-    public FichaEntity saveOrUpdateProjectReport(Long fichaId, String projectJson) {
+    public FichaEntity saveOrUpdateProjectReport(UUID fichaId, String projectJson) {
         FichaEntity ficha = fichaRepository.findById(fichaId)
                 .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada con id: " + fichaId));
         ficha.setReporteProyectoJson(projectJson);
@@ -110,8 +111,8 @@ public class FichaService {
         List<AprendizEntity> aprendicesEntities = aprendizRepository.findByFichaId(f.getId());
         List<JuicioDetalleEntity> juiciosEntities = juicioDetalleRepository.findAllWithAprendizByFichaId(f.getId());
 
-        // Agrupar juicios por aprendiz
-        Map<Long, List<JuicioDetalleEntity>> juiciosPorAprendiz = juiciosEntities.stream()
+        // Agrupar juicios por aprendiz (UUID)
+        Map<UUID, List<JuicioDetalleEntity>> juiciosPorAprendiz = juiciosEntities.stream()
                 .collect(Collectors.groupingBy(j -> j.getAprendiz().getId()));
 
         List<AprendizDTO> aprendicesDTOList = new ArrayList<>();
@@ -203,4 +204,3 @@ public class FichaService {
         return dto;
     }
 }
-

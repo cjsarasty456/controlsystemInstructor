@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/fichas")
@@ -46,7 +47,7 @@ public class FichaController {
 
     @PutMapping("/{fichaId}/proyecto")
     public ResponseEntity<?> updateProjectReport(
-            @PathVariable Long fichaId,
+            @PathVariable UUID fichaId,
             @RequestBody Map<String, Object> body) {
         Object projectJson = body.get("reporteProyecto");
         String jsonStr = projectJson != null ? projectJson.toString() : "{}";
@@ -54,4 +55,3 @@ public class FichaController {
         return ResponseEntity.ok(Map.of("mensaje", "Reporte de proyecto formativo actualizado.", "fichaId", updated.getId()));
     }
 }
-

@@ -5,10 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.UUID;
 
 @Repository
-public interface EvaluacionReglamentoRepository extends JpaRepository<EvaluacionReglamentoEntity, Long> {
-    List<EvaluacionReglamentoEntity> findByFichaIdOrderByFechaEvaluacionDesc(Long fichaId);
-    List<EvaluacionReglamentoEntity> findByAprendizIdOrderByFechaEvaluacionDesc(Long aprendizId);
+public interface EvaluacionReglamentoRepository extends JpaRepository<EvaluacionReglamentoEntity, UUID> {
+    List<EvaluacionReglamentoEntity> findByFichaIdOrderByFechaEvaluacionDesc(UUID fichaId);
+    List<EvaluacionReglamentoEntity> findByAprendizIdOrderByFechaEvaluacionDesc(UUID aprendizId);
 }
-

@@ -3,14 +3,16 @@ package com.sena.controlsystem.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "fichas")
 public class FichaEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @Column(name = "numero_ficha", nullable = false, unique = true, length = 20)
     private String numeroFicha;
@@ -53,8 +55,8 @@ public class FichaEntity {
 
     public FichaEntity() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getNumeroFicha() { return numeroFicha; }
     public void setNumeroFicha(String numeroFicha) { this.numeroFicha = numeroFicha; }
@@ -95,4 +97,3 @@ public class FichaEntity {
     public LocalDateTime getActualizadoEn() { return actualizadoEn; }
     public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
 }
-

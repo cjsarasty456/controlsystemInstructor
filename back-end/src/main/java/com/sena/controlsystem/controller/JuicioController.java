@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/fichas/{fichaId}/juicios")
@@ -21,7 +22,7 @@ public class JuicioController {
 
     @PostMapping("/upload")
     public ResponseEntity<?> uploadSofiaExcel(
-            @PathVariable Long fichaId,
+            @PathVariable UUID fichaId,
             @RequestParam("file") MultipartFile file) {
         try {
             if (file.isEmpty()) {
@@ -36,4 +37,3 @@ public class JuicioController {
         }
     }
 }
-

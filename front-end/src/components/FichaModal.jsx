@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { parseProjectReportFile, DEFAULT_ADSO_PROJECT } from '../services/projectReportService';
 
 // Catálogo institucional de programas estándar del SENA (CIES Regional Huila)
@@ -61,7 +61,7 @@ const PROGRAMAS_CATALOGO = [
   }
 ];
 
-export default function FichaModal({ isOpen, onClose, onSave }) {
+export default function FichaModal({ isOpen, onClose, onSave, fichas = [] }) {
   // Navegación por segmentos
   const [activeSegment, setActiveSegment] = useState('caracterizacion'); // 'caracterizacion' | 'programa' | 'curricular'
 
@@ -73,6 +73,35 @@ export default function FichaModal({ isOpen, onClose, onSave }) {
   const [fechaFin, setFechaFin] = useState('2027-05-07');
   const [regional, setRegional] = useState('41 - REGIONAL HUILA');
   const [centro, setCentro] = useState('9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS');
+
+  // Catálogo consolidado de programas registrados
+  const programasRegistrados = useMemo(() => {
+    const list = [...PROGRAMAS_CATALOGO];
+    (fichas || []).forEach(f => {
+      const cod = f.codigo || f.programaCodigo;
+      if (cod && !list.some(p => p.codigo === cod)) {
+        list.push({
+          codigo: cod,
+          nombre: f.programa || f.programaNombre || 'PROGRAMA DE FORMACION',
+          version: f.version || f.programaVersion || '1',
+          tipoFormacion: f.tipoFormacion || 'TITULADA',
+          nivel: f.nivel || 'TECNOLOGO',
+          horas: 3984
+        });
+      }
+    });
+    return list;
+  }, [fichas]);
+
+  const formatearNivel = (nivel) => {
+    if (!nivel) return 'Tecnólogo';
+    const n = String(nivel).toUpperCase();
+    if (n.includes('TECNOLOGO') || n.includes('TECNÓLOGO')) return 'Tecnólogo';
+    if (n.includes('TECNICO') || n.includes('TÉCNICO')) return 'Técnico Laboral';
+    if (n.includes('ESPECIALIZACION') || n.includes('ESPECIALIZACIÓN')) return 'Especialización Tecnológica';
+    if (n.includes('CURSO') || n.includes('CORTO') || n.includes('COMPLEMENTARIA')) return 'Curso Corto Complementario';
+    return nivel;
+  };
 
   // Segmento 2: Selección y Definición del Programa
   const [tipoFormacion, setTipoFormacion] = useState('TITULADA'); // 'TITULADA' | 'COMPLEMENTARIA'
@@ -92,26 +121,18 @@ export default function FichaModal({ isOpen, onClose, onSave }) {
 
   if (!isOpen) return null;
 
-  // Manejador del cambio en el selector de programa
+  // Manejador del cambio en el selector de programa (Solo programas registrados)
   const handleProgramaChange = (e) => {
     const val = e.target.value;
     setSelectedProgramaKey(val);
 
-    if (val === 'NUEVO') {
-      setCodigoPrograma('');
-      setNombrePrograma('');
-      setVersionPrograma('1');
-      setNivelPrograma(tipoFormacion === 'TITULADA' ? 'TECNOLOGO' : 'CURSO CORTO');
-      return;
-    }
-
-    const prog = PROGRAMAS_CATALOGO.find(p => p.codigo === val);
+    const prog = programasRegistrados.find(p => p.codigo === val);
     if (prog) {
       setCodigoPrograma(prog.codigo);
       setNombrePrograma(prog.nombre);
-      setVersionPrograma(prog.version);
-      setNivelPrograma(prog.nivel);
-      setTipoFormacion(prog.tipoFormacion);
+      setVersionPrograma(prog.version || '1');
+      setNivelPrograma(prog.nivel || 'TECNOLOGO');
+      setTipoFormacion(prog.tipoFormacion || 'TITULADA');
     }
   };
 
@@ -119,10 +140,26 @@ export default function FichaModal({ isOpen, onClose, onSave }) {
   const handleTipoFormacionChange = (tipo) => {
     setTipoFormacion(tipo);
     if (tipo === 'COMPLEMENTARIA') {
-      // Limpiar o anular proyecto y diseño
       setDisenoFile(null);
       setProyectoCustom(null);
       setProyectoFileName('');
+      const primerComp = programasRegistrados.find(p => p.tipoFormacion === 'COMPLEMENTARIA') || programasRegistrados[0];
+      if (primerComp) {
+        setSelectedProgramaKey(primerComp.codigo);
+        setCodigoPrograma(primerComp.codigo);
+        setNombrePrograma(primerComp.nombre);
+        setVersionPrograma(primerComp.version || '1');
+        setNivelPrograma(primerComp.nivel || 'CURSO CORTO');
+      }
+    } else {
+      const primerTitulada = programasRegistrados.find(p => p.tipoFormacion === 'TITULADA') || programasRegistrados[0];
+      if (primerTitulada) {
+        setSelectedProgramaKey(primerTitulada.codigo);
+        setCodigoPrograma(primerTitulada.codigo);
+        setNombrePrograma(primerTitulada.nombre);
+        setVersionPrograma(primerTitulada.version || '1');
+        setNivelPrograma(primerTitulada.nivel || 'TECNOLOGO');
+      }
     }
   };
 
@@ -477,67 +514,91 @@ export default function FichaModal({ isOpen, onClose, onSave }) {
                   </h4>
 
                   <div className="form-group" style={{ marginBottom: '1.25rem' }}>
-                    <label>Seleccionar Programa Registrado</label>
-                    <select value={selectedProgramaKey} onChange={handleProgramaChange} style={{ fontWeight: '600' }}>
-                      <optgroup label="Programas de Formación Titulada (CIES Huila)">
-                        {PROGRAMAS_CATALOGO.filter(p => p.tipoFormacion === 'TITULADA').map(p => (
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.35rem' }}>
+                      <label style={{ margin: 0, fontWeight: '700', color: '#00324D' }}>Seleccionar Programa Registrado</label>
+                      <span style={{ fontSize: '0.72rem', background: '#ecfdf5', color: '#065f46', border: '1px solid #a7f3d0', padding: '0.15rem 0.5rem', borderRadius: '4px', fontWeight: '700' }}>
+                        <i className="ph ph-check-circle"></i> Catálogo Oficial SENA CIES
+                      </span>
+                    </div>
+                    <select 
+                      value={selectedProgramaKey} 
+                      onChange={handleProgramaChange} 
+                      style={{ fontWeight: '600', width: '100%', borderColor: '#cbd5e1' }}
+                    >
+                      <optgroup label="Programas de Formación Titulada Registrados (CIES Huila)">
+                        {programasRegistrados.filter(p => p.tipoFormacion === 'TITULADA').map(p => (
                           <option key={p.codigo} value={p.codigo}>
-                            {p.codigo} — {p.nombre} ({p.nivel})
+                            {p.codigo} — {p.nombre} ({formatearNivel(p.nivel)})
                           </option>
                         ))}
                       </optgroup>
-                      <optgroup label="Programas de Formación Complementaria (Cursos Cortos)">
-                        {PROGRAMAS_CATALOGO.filter(p => p.tipoFormacion === 'COMPLEMENTARIA').map(p => (
+                      <optgroup label="Programas de Formación Complementaria Registrados (Cursos Cortos)">
+                        {programasRegistrados.filter(p => p.tipoFormacion === 'COMPLEMENTARIA').map(p => (
                           <option key={p.codigo} value={p.codigo}>
-                            {p.codigo} — {p.nombre} (40-48 Horas)
+                            {p.codigo} — {p.nombre} ({p.horas || 48} Horas)
                           </option>
                         ))}
                       </optgroup>
-                      <option value="NUEVO">+ Cargar / Registrar Nuevo Programa de Formación...</option>
                     </select>
                   </div>
 
-                  {/* Campos detallados del Programa */}
+                  <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '8px', padding: '0.65rem 0.9rem', marginBottom: '1.15rem' }}>
+                    <small style={{ color: '#0369a1', display: 'flex', alignItems: 'center', gap: '0.45rem', fontWeight: '600' }}>
+                      <i className="ph ph-lock-key"></i>
+                      <span>Esto debe ser solo lectura, según el programa cargado</span>
+                    </small>
+                  </div>
+
+                  {/* Campos de Solo Lectura según el Programa cargado */}
                   <div className="form-row">
                     <div className="form-group flex-1">
-                      <label>Código del Programa *</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        Código del Programa *
+                        <i className="ph ph-lock" style={{ fontSize: '0.75rem', color: '#64748b' }} title="Solo lectura"></i>
+                      </label>
                       <input 
                         type="text" 
-                        required 
-                        placeholder="Ej: 228118"
+                        readOnly 
                         value={codigoPrograma}
-                        onChange={(e) => setCodigoPrograma(e.target.value)}
+                        style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: '700', cursor: 'default', border: '1px solid #cbd5e1' }}
                       />
                     </div>
                     <div className="form-group flex-1">
-                      <label>Versión del Programa</label>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        Versión del Programa
+                        <i className="ph ph-lock" style={{ fontSize: '0.75rem', color: '#64748b' }} title="Solo lectura"></i>
+                      </label>
                       <input 
                         type="text" 
-                        placeholder="Ej: 1"
+                        readOnly 
                         value={versionPrograma}
-                        onChange={(e) => setVersionPrograma(e.target.value)}
+                        style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: '600', cursor: 'default', border: '1px solid #cbd5e1' }}
                       />
                     </div>
                     <div className="form-group flex-1">
-                      <label>Nivel de Formación</label>
-                      <select value={nivelPrograma} onChange={(e) => setNivelPrograma(e.target.value)}>
-                        <option value="TECNOLOGO">Tecnólogo</option>
-                        <option value="TECNICO">Técnico Laboral</option>
-                        <option value="ESPECIALIZACION TECNOLOGICA">Especialización Tecnológica</option>
-                        <option value="CURSO CORTO">Curso Corto Complementario</option>
-                      </select>
+                      <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        Nivel de Formación
+                        <i className="ph ph-lock" style={{ fontSize: '0.75rem', color: '#64748b' }} title="Solo lectura"></i>
+                      </label>
+                      <input 
+                        type="text" 
+                        readOnly 
+                        value={formatearNivel(nivelPrograma)}
+                        style={{ background: '#f1f5f9', color: '#0f172a', fontWeight: '600', cursor: 'default', border: '1px solid #cbd5e1' }}
+                      />
                     </div>
                   </div>
 
-                  <div className="form-group" style={{ marginTop: '0.75rem' }}>
-                    <label>Denominación Oficial del Programa *</label>
+                  <div className="form-group" style={{ marginTop: '0.85rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Denominación Oficial del Programa *
+                      <i className="ph ph-lock" style={{ fontSize: '0.75rem', color: '#64748b' }} title="Solo lectura"></i>
+                    </label>
                     <input 
                       type="text" 
-                      required 
-                      placeholder="Ej: ANALISIS Y DESARROLLO DE SOFTWARE"
+                      readOnly 
                       value={nombrePrograma}
-                      onChange={(e) => setNombrePrograma(e.target.value)}
-                      style={{ fontWeight: '600', color: '#00324D' }}
+                      style={{ background: '#f1f5f9', color: '#00324D', fontWeight: '700', cursor: 'default', border: '1px solid #cbd5e1' }}
                     />
                   </div>
                 </div>

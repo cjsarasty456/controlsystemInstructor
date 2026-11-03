@@ -2,9 +2,10 @@ package com.sena.controlsystem.dto;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class AprendizDTO {
-    private Long id;
+    private UUID id;
     private String tipoDoc;
     private String numDoc;
     private String nombre;
@@ -20,8 +21,8 @@ public class AprendizDTO {
 
     public AprendizDTO() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getTipoDoc() { return tipoDoc; }
     public void setTipoDoc(String tipoDoc) { this.tipoDoc = tipoDoc; }
@@ -59,4 +60,3 @@ public class AprendizDTO {
     public List<JuicioItemDTO> getRaps() { return raps; }
     public void setRaps(List<JuicioItemDTO> raps) { this.raps = raps; }
 }
-

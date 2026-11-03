@@ -41,7 +41,7 @@ public class JuicioService {
     }
 
     @Transactional
-    public Map<String, Object> procesarArchivoSofiaExcel(Long fichaId, MultipartFile file) throws Exception {
+    public Map<String, Object> procesarArchivoSofiaExcel(UUID fichaId, MultipartFile file) throws Exception {
         FichaEntity ficha = fichaRepository.findById(fichaId)
                 .orElseThrow(() -> new IllegalArgumentException("Ficha no encontrada con id: " + fichaId));
 
@@ -96,16 +96,16 @@ public class JuicioService {
             if (hRow != null) {
                 for (int c = 0; c < hRow.getLastCellNum(); c++) {
                     String h = formatter.formatCellValue(hRow.getCell(c)).toLowerCase().trim();
-                    if (h.contains("tipo") && h.contains("doc")) idxTipoDoc = c;
-                    else if (h.contains("número") || h.contains("numero") || (h.contains("documento") && !h.contains("tipo"))) idxNumDoc = c;
-                    else if (h.contains("nombre")) idxNombre = c;
+                    if (h.contains("tipo") && (h.contains("doc") || h.contains("identificacion"))) idxTipoDoc = c;
+                    else if (((h.contains("número") || h.contains("numero") || h.contains("num")) && (h.contains("doc") || h.contains("identificacion"))) || (h.contains("documento") && !h.contains("tipo"))) idxNumDoc = c;
+                    else if (h.contains("nombre") && !h.contains("funcionario") && !h.contains("instructor") && !h.contains("programa")) idxNombre = c;
                     else if (h.contains("apellido")) idxApellidos = c;
                     else if (h.contains("estado")) idxEstado = c;
                     else if (h.contains("competencia")) idxCompetencia = c;
                     else if (h.contains("resultado") || h.contains("rap")) idxRap = c;
-                    else if (h.contains("juicio")) idxJuicio = c;
-                    else if (h.contains("fecha") || h.contains("asentamiento") || h.contains("registro")) idxFecha = c;
-                    else if (h.contains("funcionario") || h.contains("instructor")) idxFuncionario = c;
+                    else if (h.contains("juicio") && !h.contains("fecha") && !h.contains("hora") && !h.contains("funcionario") && !h.contains("instructor")) idxJuicio = c;
+                    else if ((h.contains("fecha") || h.contains("hora") || h.contains("asentamiento")) && !h.contains("funcionario") && !h.contains("instructor")) idxFecha = c;
+                    else if (h.contains("funcionario") || h.contains("instructor") || h.contains("registro el")) idxFuncionario = c;
                 }
             }
 
@@ -231,13 +231,26 @@ public class JuicioService {
         String s = formatter.formatCellValue(cell).trim();
         if (s.isEmpty()) return null;
         try {
-            // Intentar formatos comunes
             if (s.contains("/")) {
-                String[] parts = s.split(" ")[0].split("/");
-                int d = Integer.parseInt(parts[0]);
-                int m = Integer.parseInt(parts[1]);
-                int y = Integer.parseInt(parts[2]);
-                return LocalDateTime.of(y, m, d, 10, 0);
+                String[] spaceParts = s.split("\\s+");
+                String[] dateParts = spaceParts[0].split("/");
+                int d = Integer.parseInt(dateParts[0]);
+                int m = Integer.parseInt(dateParts[1]);
+                int y = Integer.parseInt(dateParts[2]);
+                int hh = 0;
+                int mm = 0;
+                if (spaceParts.length > 1) {
+                    String timeStr = spaceParts[1];
+                    String[] timeParts = timeStr.split("[:.]");
+                    if (timeParts.length >= 2) {
+                        hh = Integer.parseInt(timeParts[0]);
+                        mm = Integer.parseInt(timeParts[1]);
+                        String fullLower = s.toLowerCase();
+                        if (fullLower.contains("p") && hh < 12) hh += 12;
+                        if (fullLower.contains("a") && hh == 12) hh = 0;
+                    }
+                }
+                return LocalDateTime.of(y, m, d, hh, mm);
             }
         } catch (Exception ignored) {}
         return LocalDateTime.now();

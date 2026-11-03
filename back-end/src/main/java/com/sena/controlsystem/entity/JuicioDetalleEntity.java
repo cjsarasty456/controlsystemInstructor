@@ -2,6 +2,7 @@ package com.sena.controlsystem.entity;
 
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "juicios_evaluativos_detalle", uniqueConstraints = {
@@ -10,8 +11,9 @@ import java.time.LocalDateTime;
 public class JuicioDetalleEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ficha_id", nullable = false)
@@ -48,8 +50,8 @@ public class JuicioDetalleEntity {
 
     public JuicioDetalleEntity() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public FichaEntity getFicha() { return ficha; }
     public void setFicha(FichaEntity ficha) { this.ficha = ficha; }
@@ -81,4 +83,3 @@ public class JuicioDetalleEntity {
     public LocalDateTime getActualizadoEn() { return actualizadoEn; }
     public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
 }
-

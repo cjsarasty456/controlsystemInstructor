@@ -1,11 +1,14 @@
 -- ============================================================
 -- SISTEMA DE CONTROL DE INSTRUCTORES — SENA CIES HUILA
--- Esquema DDL Oficial de Base de Datos (PostgreSQL)
+-- Esquema DDL Oficial de Base de Datos (PostgreSQL) con UUID
 -- ============================================================
+
+-- Extensión UUID (nativa en PostgreSQL 13+)
+CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 -- 1. Tabla de Fichas de Formación (HU-007)
 CREATE TABLE IF NOT EXISTS fichas (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     numero_ficha VARCHAR(20) NOT NULL UNIQUE,
     programa_nombre VARCHAR(255) NOT NULL,
     programa_codigo VARCHAR(50) DEFAULT '228118',
@@ -16,6 +19,7 @@ CREATE TABLE IF NOT EXISTS fichas (
     sede_centro VARCHAR(255) DEFAULT '9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS',
     regional VARCHAR(150) DEFAULT '41 - REGIONAL HUILA',
     estado VARCHAR(30) DEFAULT 'EN EJECUCION' CHECK (estado IN ('EN EJECUCION', 'ACTIVA', 'ETAPA PRODUCTIVA', 'FINALIZADA', 'CANCELADA')),
+    reporte_proyecto_json TEXT,
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -25,8 +29,8 @@ CREATE INDEX IF NOT EXISTS idx_fichas_estado ON fichas(estado);
 
 -- 2. Tabla de Aprendices Matriculados en Ficha (1 registro por persona por ficha)
 CREATE TABLE IF NOT EXISTS aprendices (
-    id SERIAL PRIMARY KEY,
-    ficha_id INT NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ficha_id UUID NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
     tipo_documento VARCHAR(10) NOT NULL, -- CC, TI, CE, PPT
     numero_documento VARCHAR(25) NOT NULL,
     nombres VARCHAR(150) NOT NULL,
@@ -44,8 +48,8 @@ CREATE INDEX IF NOT EXISTS idx_aprendices_ficha ON aprendices(ficha_id);
 
 -- 3. Tabla de Historial y Registro de Cada Cargue de Actualización (Auditoría)
 CREATE TABLE IF NOT EXISTS historial_cargues (
-    id SERIAL PRIMARY KEY,
-    ficha_id INT NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ficha_id UUID NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
     consecutivo_cargue INT NOT NULL,
     nombre_archivo_original VARCHAR(255) NOT NULL,
     hash_sha256 VARCHAR(64) NOT NULL,
@@ -64,10 +68,10 @@ CREATE INDEX IF NOT EXISTS idx_cargues_ficha ON historial_cargues(ficha_id);
 
 -- 4. Detalle de Juicios Evaluativos por RAP y Aprendiz (1 registro por Aprendiz + RAP)
 CREATE TABLE IF NOT EXISTS juicios_evaluativos_detalle (
-    id SERIAL PRIMARY KEY,
-    ficha_id INT NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
-    aprendiz_id INT NOT NULL REFERENCES aprendices(id) ON DELETE CASCADE,
-    cargue_id INT REFERENCES historial_cargues(id) ON DELETE SET NULL,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ficha_id UUID NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
+    aprendiz_id UUID NOT NULL REFERENCES aprendices(id) ON DELETE CASCADE,
+    cargue_id UUID REFERENCES historial_cargues(id) ON DELETE SET NULL,
     competencia_denominacion TEXT NOT NULL,
     resultado_aprendizaje TEXT NOT NULL,
     juicio_evaluacion VARCHAR(50) NOT NULL, -- APROBADO, NO APROBADO, POR EVALUAR
@@ -75,7 +79,6 @@ CREATE TABLE IF NOT EXISTS juicios_evaluativos_detalle (
     funcionario_registro VARCHAR(255),
     creado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     actualizado_en TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    -- Garantiza que un aprendiz tenga solo un registro por cada RAP específico
     CONSTRAINT uq_juicio_aprendiz_rap UNIQUE (aprendiz_id, resultado_aprendizaje)
 );
 
@@ -85,8 +88,8 @@ CREATE INDEX IF NOT EXISTS idx_juicios_evaluacion ON juicios_evaluativos_detalle
 
 -- 5. Tabla de Llamado de Asistencia (HU-003)
 CREATE TABLE IF NOT EXISTS sesiones_asistencia (
-    id SERIAL PRIMARY KEY,
-    ficha_id INT NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ficha_id UUID NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
     fecha_sesion DATE NOT NULL,
     hora_inicio TIME NOT NULL,
     hora_fin TIME,
@@ -96,9 +99,9 @@ CREATE TABLE IF NOT EXISTS sesiones_asistencia (
 );
 
 CREATE TABLE IF NOT EXISTS detalle_asistencia (
-    id SERIAL PRIMARY KEY,
-    sesion_id INT NOT NULL REFERENCES sesiones_asistencia(id) ON DELETE CASCADE,
-    aprendiz_id INT NOT NULL REFERENCES aprendices(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    sesion_id UUID NOT NULL REFERENCES sesiones_asistencia(id) ON DELETE CASCADE,
+    aprendiz_id UUID NOT NULL REFERENCES aprendices(id) ON DELETE CASCADE,
     estado VARCHAR(20) NOT NULL CHECK (estado IN ('PRESENTE', 'AUSENTE', 'JUSTIFICADO')),
     observacion VARCHAR(255),
     CONSTRAINT uq_asistencia_sesion_aprendiz UNIQUE (sesion_id, aprendiz_id)
@@ -106,9 +109,9 @@ CREATE TABLE IF NOT EXISTS detalle_asistencia (
 
 -- 6. Tabla de Evaluaciones según el Reglamento del Aprendiz (HU-005)
 CREATE TABLE IF NOT EXISTS evaluaciones_reglamento (
-    id SERIAL PRIMARY KEY,
-    ficha_id INT NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
-    aprendiz_id INT NOT NULL REFERENCES aprendices(id) ON DELETE CASCADE,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    ficha_id UUID NOT NULL REFERENCES fichas(id) ON DELETE CASCADE,
+    aprendiz_id UUID NOT NULL REFERENCES aprendices(id) ON DELETE CASCADE,
     motivo VARCHAR(50) NOT NULL, -- ACADEMICO, INASISTENCIA, DESERCION, DISCIPLINARIO
     gravedad VARCHAR(20) NOT NULL, -- LEVE, GRAVE, GRAVISIMA
     clasificacion_falta VARCHAR(150) NOT NULL,
@@ -126,18 +129,10 @@ CREATE INDEX IF NOT EXISTS idx_eval_reglamento_ficha ON evaluaciones_reglamento(
 
 -- 7. Documentos del Reglamento del Aprendiz y Proyecto Formativo Cargados (HU-005 & HU-009)
 CREATE TABLE IF NOT EXISTS documentos_reglamento (
-    id SERIAL PRIMARY KEY,
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     nombre_archivo VARCHAR(255) NOT NULL,
     version_norma VARCHAR(100) DEFAULT 'Acuerdo 007 de 2012 / Vigente 2026',
     fecha_carga TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     tamano_bytes BIGINT,
     activo BOOLEAN DEFAULT TRUE
 );
-
--- Semilla de Fichas
-INSERT INTO fichas (numero_ficha, programa_nombre, programa_codigo, jornada, fecha_inicio, fecha_fin, estado)
-VALUES 
-('3145556', 'ANALISIS Y DESARROLLO DE SOFTWARE', '228118', 'PRESENCIAL', '2024-12-16', '2027-05-07', 'EN EJECUCION'),
-('3145555', 'ANALISIS Y DESARROLLO DE SOFTWARE', '228118', 'PRESENCIAL', '2024-12-16', '2027-05-07', 'EN EJECUCION'),
-('3239137', 'ANALISIS Y DESARROLLO DE SOFTWARE', '228118', 'MIXTA', '2024-10-01', '2026-12-15', 'EN EJECUCION')
-ON CONFLICT (numero_ficha) DO NOTHING;

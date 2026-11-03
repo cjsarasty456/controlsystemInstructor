@@ -61,19 +61,29 @@ export const parseSenaDateParts = (val) => {
     return { dateStr: '', timeStr: '', fullFormatted: '', timestamp: 0 };
   }
 
-  // 3. Formato latino DD/MM/YYYY o DD-MM-YYYY (con o sin hora HH:mm o HH:mm:ss)
-  const latMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2}):(\d{1,2})(?::\d{1,2})?)?/);
+  // 3. Formato latino DD/MM/YYYY o DD-MM-YYYY (con o sin hora HH:mm, HH.mm o con am/pm: '8.52 a', '08:52 a.m.')
+  const latMatch = str.match(/^(\d{1,2})[-/](\d{1,2})[-/](\d{4})(?:\s+(\d{1,2})[:.](\d{1,2})(?:[:.]\d{1,2})?\s*([ap]\.?m?\.?)?)?/i);
   if (latMatch) {
-    const [, d, m, y, hh, mm] = latMatch;
+    const [, d, m, y, rawHh, rawMm, ampm] = latMatch;
+    let hh = rawHh !== undefined ? parseInt(rawHh, 10) : 0;
+    const mm = rawMm !== undefined ? parseInt(rawMm, 10) : 0;
+
+    if (ampm) {
+      const isPm = ampm.toLowerCase().startsWith('p');
+      const isAm = ampm.toLowerCase().startsWith('a');
+      if (isPm && hh < 12) hh += 12;
+      if (isAm && hh === 12) hh = 0;
+    }
+
     const dateObj = new Date(
       parseInt(y, 10),
       parseInt(m, 10) - 1,
       parseInt(d, 10),
-      hh !== undefined ? parseInt(hh, 10) : 0,
-      mm !== undefined ? parseInt(mm, 10) : 0
+      rawHh !== undefined ? hh : 0,
+      rawMm !== undefined ? mm : 0
     );
     const dateStr = `${d.padStart(2, '0')}/${m.padStart(2, '0')}/${y}`;
-    const timeStr = hh !== undefined ? `${hh.padStart(2, '0')}:${(mm || '00').padStart(2, '0')}` : '';
+    const timeStr = rawHh !== undefined ? `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}` : '';
     return {
       dateStr,
       timeStr,

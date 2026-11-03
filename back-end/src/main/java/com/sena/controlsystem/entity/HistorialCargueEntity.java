@@ -3,14 +3,16 @@ package com.sena.controlsystem.entity;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.UUID;
 
 @Entity
 @Table(name = "historial_cargues")
 public class HistorialCargueEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(name = "id", updatable = false, nullable = false)
+    private UUID id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "ficha_id", nullable = false)
@@ -54,8 +56,8 @@ public class HistorialCargueEntity {
 
     public HistorialCargueEntity() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public FichaEntity getFicha() { return ficha; }
     public void setFicha(FichaEntity ficha) { this.ficha = ficha; }
@@ -96,4 +98,3 @@ public class HistorialCargueEntity {
     public String getObservaciones() { return observaciones; }
     public void setObservaciones(String observaciones) { this.observaciones = observaciones; }
 }
-

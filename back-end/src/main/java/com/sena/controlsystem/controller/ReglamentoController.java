@@ -6,6 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api")
@@ -19,7 +20,7 @@ public class ReglamentoController {
     }
 
     @GetMapping("/fichas/{fichaId}/evaluaciones")
-    public ResponseEntity<List<EvaluacionDTO>> getEvaluacionesPorFicha(@PathVariable Long fichaId) {
+    public ResponseEntity<List<EvaluacionDTO>> getEvaluacionesPorFicha(@PathVariable UUID fichaId) {
         return ResponseEntity.ok(reglamentoService.getEvaluacionesPorFicha(fichaId));
     }
 
@@ -28,4 +29,3 @@ public class ReglamentoController {
         return ResponseEntity.ok(reglamentoService.registrarEvaluacion(request));
     }
 }
-

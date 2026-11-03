@@ -1,11 +1,12 @@
 package com.sena.controlsystem.dto;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 public class EvaluacionDTO {
-    private Long id;
-    private Long fichaId;
-    private Long aprendizId;
+    private UUID id;
+    private UUID fichaId;
+    private UUID aprendizId;
     private String aprendizNombre;
     private String aprendizDocumento;
     private String motivo;
@@ -20,14 +21,14 @@ public class EvaluacionDTO {
 
     public EvaluacionDTO() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
-    public Long getFichaId() { return fichaId; }
-    public void setFichaId(Long fichaId) { this.fichaId = fichaId; }
+    public UUID getFichaId() { return fichaId; }
+    public void setFichaId(UUID fichaId) { this.fichaId = fichaId; }
 
-    public Long getAprendizId() { return aprendizId; }
-    public void setAprendizId(Long aprendizId) { this.aprendizId = aprendizId; }
+    public UUID getAprendizId() { return aprendizId; }
+    public void setAprendizId(UUID aprendizId) { this.aprendizId = aprendizId; }
 
     public String getAprendizNombre() { return aprendizNombre; }
     public void setAprendizNombre(String aprendizNombre) { this.aprendizNombre = aprendizNombre; }
@@ -62,4 +63,3 @@ public class EvaluacionDTO {
     public String getInstructorResponsable() { return instructorResponsable; }
     public void setInstructorResponsable(String instructorResponsable) { this.instructorResponsable = instructorResponsable; }
 }
-

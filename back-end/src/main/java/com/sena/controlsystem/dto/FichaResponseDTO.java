@@ -3,9 +3,10 @@ package com.sena.controlsystem.dto;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class FichaResponseDTO {
-    private Long id;
+    private UUID id;
     private String numero;
     private String programa;
     private String codigo;
@@ -29,8 +30,8 @@ public class FichaResponseDTO {
 
     public FichaResponseDTO() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getNumero() { return numero; }
     public void setNumero(String numero) { this.numero = numero; }
@@ -92,4 +93,3 @@ public class FichaResponseDTO {
     public List<HistorialCargueDTO> getReportes() { return reportes; }
     public void setReportes(List<HistorialCargueDTO> reportes) { this.reportes = reportes; }
 }
-

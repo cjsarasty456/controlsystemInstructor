@@ -1,7 +1,9 @@
 package com.sena.controlsystem.dto;
 
+import java.util.UUID;
+
 public class JuicioItemDTO {
-    private Long id;
+    private UUID id;
     private String tipoDoc;
     private String numDoc;
     private String nombre;
@@ -15,8 +17,8 @@ public class JuicioItemDTO {
 
     public JuicioItemDTO() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public String getTipoDoc() { return tipoDoc; }
     public void setTipoDoc(String tipoDoc) { this.tipoDoc = tipoDoc; }
@@ -48,4 +50,3 @@ public class JuicioItemDTO {
     public String getFuncionario() { return funcionario; }
     public void setFuncionario(String funcionario) { this.funcionario = funcionario; }
 }
-

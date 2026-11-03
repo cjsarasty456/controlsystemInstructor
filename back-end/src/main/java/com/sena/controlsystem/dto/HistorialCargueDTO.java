@@ -1,7 +1,9 @@
 package com.sena.controlsystem.dto;
 
+import java.util.UUID;
+
 public class HistorialCargueDTO {
-    private Long id;
+    private UUID id;
     private Integer numeroCargue;
     private String filename;
     private String fechaReporte;
@@ -16,8 +18,8 @@ public class HistorialCargueDTO {
 
     public HistorialCargueDTO() {}
 
-    public Long getId() { return id; }
-    public void setId(Long id) { this.id = id; }
+    public UUID getId() { return id; }
+    public void setId(UUID id) { this.id = id; }
 
     public Integer getNumeroCargue() { return numeroCargue; }
     public void setNumeroCargue(Integer numeroCargue) { this.numeroCargue = numeroCargue; }
@@ -52,4 +54,3 @@ public class HistorialCargueDTO {
     public String getHashSha256() { return hashSha256; }
     public void setHashSha256(String hashSha256) { this.hashSha256 = hashSha256; }
 }
-
