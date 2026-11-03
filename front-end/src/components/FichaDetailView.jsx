@@ -3,6 +3,7 @@ import { getFaseForRapAndCompetencia, DEFAULT_ADSO_PROJECT } from '../services/p
 import { parseSenaDateParts, formatSenaDate } from '../services/dateUtils';
 import UploadProjectReportModal from './UploadProjectReportModal';
 import EvaluadorReglamentoModal from './EvaluadorReglamentoModal';
+import FichaDashboardView from './FichaDashboardView';
 
 // Validar que el aprendiz esté estrictamente "EN FORMACIÓN"
 const isEnFormacion = (estado) => {
@@ -17,7 +18,7 @@ export default function FichaDetailView({
   onExcelUpload,
   onSaveProjectReport
 }) {
-  const [activeTab, setActiveTab] = useState('juicios');
+  const [activeTab, setActiveTab] = useState('dashboard');
   const [subViewMode, setSubViewMode] = useState('raps'); // 'raps' o 'tabla'
   
   // Estados de los 4 Filtros Solicitados
@@ -48,7 +49,19 @@ export default function FichaDetailView({
   const [learnerModalSortField, setLearnerModalSortField] = useState('rap');
   const [learnerModalSortOrder, setLearnerModalSortOrder] = useState('asc');
 
+  // Estados de Ordenamiento en Listado de Aprendices de la Ficha
+  const [learnersSortField, setLearnersSortField] = useState('nombreCompleto');
+  const [learnersSortOrder, setLearnersSortOrder] = useState('asc');
+
   // Manejadores de Ordenamiento por Columna
+  const handleSortLearners = (field) => {
+    if (learnersSortField === field) {
+      setLearnersSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setLearnersSortField(field);
+      setLearnersSortOrder(field === 'pctApr' || field === 'noAprobados' ? 'desc' : 'asc');
+    }
+  };
   const handleSortRapDetail = (field) => {
     if (rapDetailSortField === field) {
       setRapDetailSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
@@ -388,6 +401,80 @@ export default function FichaDetailView({
     return list;
   }, [selectedLearnerModal, learnerModalSortField, learnerModalSortOrder, activeProject]);
 
+  // Lista de Aprendices de la Ficha Organizada Dinámicamente por Columna
+  const sortedLearnersList = useMemo(() => {
+    const list = aprendices.map(apr => {
+      const learnerRaps = (apr.raps && apr.raps.length > 0)
+        ? apr.raps
+        : juicios.filter(j => j.numDoc === apr.numDoc);
+
+      const aprobadosCount = apr.aprobados !== undefined
+        ? apr.aprobados
+        : learnerRaps.filter(r => String(r.juicio || '').toUpperCase().includes('APROBADO') && !String(r.juicio || '').toUpperCase().includes('NO')).length;
+
+      const noAprobadosCount = apr.noAprobados !== undefined
+        ? apr.noAprobados
+        : learnerRaps.filter(r => String(r.juicio || '').toUpperCase().includes('NO APROBADO') || String(r.juicio || '').toUpperCase().includes('DEFICIENTE')).length;
+
+      const pendientesCount = apr.pendientes !== undefined
+        ? apr.pendientes
+        : learnerRaps.filter(r => {
+            const ju = String(r.juicio || '').toUpperCase();
+            return ju.includes('POR EVALUAR') || ju.includes('PENDIENTE') || (!ju.includes('APROBADO'));
+          }).length;
+
+      const totalRaps = learnerRaps.length > 0 
+        ? learnerRaps.length 
+        : (apr.totalRaps || (activeProject?.totalRapsRegistrados || 75));
+
+      const pctApr = totalRaps > 0 ? Math.round((aprobadosCount / totalRaps) * 100) : 0;
+      const pctPend = totalRaps > 0 ? Math.round((pendientesCount / totalRaps) * 100) : 0;
+      const pctNoApr = totalRaps > 0 ? Math.round((noAprobadosCount / totalRaps) * 100) : 0;
+      const enForm = isEnFormacion(apr.estado);
+
+      return {
+        ...apr,
+        tipoDoc: apr.tipoDoc || 'CC',
+        numDoc: apr.numDoc || apr.numeroDocumento || '',
+        nombreCompleto: apr.nombreCompleto || `${apr.nombres || ''} ${apr.apellidos || ''}`.trim(),
+        estado: apr.estado || 'EN FORMACION',
+        aprobadosCount,
+        noAprobadosCount,
+        pendientesCount,
+        totalRaps,
+        pctApr,
+        pctPend,
+        pctNoApr,
+        enForm
+      };
+    });
+
+    return list.sort((a, b) => {
+      let valA = a[learnersSortField];
+      let valB = b[learnersSortField];
+
+      if (learnersSortField === 'numDoc') {
+        const nA = parseInt(String(valA).replace(/\D/g, ''), 10) || 0;
+        const nB = parseInt(String(valB).replace(/\D/g, ''), 10) || 0;
+        return learnersSortOrder === 'asc' ? nA - nB : nB - nA;
+      }
+
+      if (learnersSortField === 'pctApr') {
+        return learnersSortOrder === 'asc' ? a.pctApr - b.pctApr : b.pctApr - a.pctApr;
+      }
+
+      if (learnersSortField === 'noAprobados') {
+        return learnersSortOrder === 'asc' ? a.noAprobadosCount - b.noAprobadosCount : b.noAprobadosCount - a.noAprobadosCount;
+      }
+
+      valA = String(valA || '').toLowerCase();
+      valB = String(valB || '').toLowerCase();
+      return learnersSortOrder === 'asc'
+        ? valA.localeCompare(valB, 'es', { numeric: true })
+        : valB.localeCompare(valA, 'es', { numeric: true });
+    });
+  }, [aprendices, juicios, activeProject, learnersSortField, learnersSortOrder]);
+
   // Métricas globales
   const globalAprobados = rapsMetrics.reduce((acc, r) => acc + r.aprobados, 0);
   const globalPendientes = rapsMetrics.reduce((acc, r) => acc + r.pendientes, 0);
@@ -484,6 +571,12 @@ export default function FichaDetailView({
       {/* Barra de Pestañas */}
       <div className="tab-bar">
         <button 
+          className={`tab-btn ${activeTab === 'dashboard' ? 'active' : ''}`}
+          onClick={() => setActiveTab('dashboard')}
+        >
+          <i className="ph ph-chart-pie-slice"></i> Dashboard de Progreso General
+        </button>
+        <button 
           className={`tab-btn ${activeTab === 'juicios' ? 'active' : ''}`}
           onClick={() => setActiveTab('juicios')}
         >
@@ -502,6 +595,25 @@ export default function FichaDetailView({
           <i className="ph ph-info"></i> Información de Caracterización
         </button>
       </div>
+
+      {/* Pestaña: Dashboard de Progreso General de la Ficha */}
+      {activeTab === 'dashboard' && (
+        <div className="tab-content active" style={{ padding: '0.5rem 0' }}>
+          <FichaDashboardView 
+            ficha={ficha}
+            activeProject={activeProject}
+            onNavigateToTab={(tab) => setActiveTab(tab)}
+            onOpenReglamentoModal={(numDoc) => {
+              setSelectedLearnerForEvaluation(numDoc);
+              setIsReglamentoModalOpen(true);
+            }}
+            onFilterByFase={(fase) => {
+              setFilterFase(fase);
+              setActiveTab('juicios');
+            }}
+          />
+        </div>
+      )}
 
       {/* Pestaña: Juicios Evaluativos con Filtros Multidimensionales y Métricas por RAP */}
       {activeTab === 'juicios' && (
@@ -1012,8 +1124,18 @@ export default function FichaDetailView({
             <div className="table-header-info">
               <div>
                 <h4><i className="ph ph-users-three"></i> Aprendices de la Ficha ({aprendices.length} Registros Únicos)</h4>
-                <small style={{ color: 'var(--text-secondary)' }}>
-                  Total en Formación: <strong>{totalEnFormacion}</strong> | Excluidos de cálculos: <strong>{aprendicesNoActivosCount}</strong>
+                <small style={{ color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <span>Total en Formación: <strong>{totalEnFormacion}</strong> | Excluidos de cálculos: <strong>{aprendicesNoActivosCount}</strong></span>
+                  <span style={{ color: '#0284c7', fontWeight: '600', background: '#eff6ff', padding: '0.1rem 0.5rem', borderRadius: '4px', border: '1px solid #bfdbfe' }}>
+                    <i className="ph ph-funnel"></i> Ordenado por: {
+                      learnersSortField === 'numDoc' ? 'Documento' :
+                      learnersSortField === 'tipoDoc' ? 'Tipo' :
+                      learnersSortField === 'nombreCompleto' ? 'Nombres y Apellidos' :
+                      learnersSortField === 'estado' ? 'Estado' :
+                      learnersSortField === 'pctApr' ? 'Progreso %' :
+                      learnersSortField === 'noAprobados' ? 'Reprobados' : learnersSortField
+                    } ({learnersSortOrder === 'asc' ? 'Ascendente ↑' : 'Descendente ↓'})
+                  </span>
                 </small>
               </div>
               <button 
@@ -1027,52 +1149,55 @@ export default function FichaDetailView({
             <table className="data-table">
               <thead>
                 <tr>
-                  <th>Tipo</th>
-                  <th>Número de Documento</th>
-                  <th>Nombres y Apellidos</th>
-                  <th>Estado</th>
-                  <th style={{ minWidth: '220px' }}>Progreso de RAPs Aprobados</th>
-                  <th>Reprobados</th>
+                  <th onClick={() => handleSortLearners('tipoDoc')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Tipo de Documento">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Tipo
+                      <i className={`ph ${learnersSortField === 'tipoDoc' ? (learnersSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnersSortField === 'tipoDoc' ? '#39A900' : '#94a3b8' }}></i>
+                    </div>
+                  </th>
+                  <th onClick={() => handleSortLearners('numDoc')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Número de Documento">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Número de Documento
+                      <i className={`ph ${learnersSortField === 'numDoc' ? (learnersSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnersSortField === 'numDoc' ? '#39A900' : '#94a3b8' }}></i>
+                    </div>
+                  </th>
+                  <th onClick={() => handleSortLearners('nombreCompleto')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Nombres y Apellidos">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Nombres y Apellidos
+                      <i className={`ph ${learnersSortField === 'nombreCompleto' ? (learnersSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnersSortField === 'nombreCompleto' ? '#39A900' : '#94a3b8' }}></i>
+                    </div>
+                  </th>
+                  <th onClick={() => handleSortLearners('estado')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Estado">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Estado
+                      <i className={`ph ${learnersSortField === 'estado' ? (learnersSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnersSortField === 'estado' ? '#39A900' : '#94a3b8' }}></i>
+                    </div>
+                  </th>
+                  <th onClick={() => handleSortLearners('pctApr')} style={{ minWidth: '220px', cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Progreso de RAPs Aprobados">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Progreso de RAPs Aprobados
+                      <i className={`ph ${learnersSortField === 'pctApr' ? (learnersSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnersSortField === 'pctApr' ? '#39A900' : '#94a3b8' }}></i>
+                    </div>
+                  </th>
+                  <th onClick={() => handleSortLearners('noAprobados')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Juicios Reprobados">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                      Reprobados
+                      <i className={`ph ${learnersSortField === 'noAprobados' ? (learnersSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnersSortField === 'noAprobados' ? '#39A900' : '#94a3b8' }}></i>
+                    </div>
+                  </th>
                   <th>Acciones</th>
                 </tr>
               </thead>
               <tbody>
-                {aprendices.length === 0 ? (
+                {sortedLearnersList.length === 0 ? (
                   <tr>
                     <td colSpan="7" style={{ textAlign: 'center', color: 'var(--text-muted)', padding: '2.5rem' }}>
                       No hay aprendices registrados. Carga un reporte Excel de SOFIA Plus para sincronizar la población de la ficha.
                     </td>
                   </tr>
                 ) : (
-                  aprendices.map((apr, idx) => {
-                    // Cálculo Dinámico y Robusto de Métricas por Aprendiz (Evita NaN)
-                    const learnerRaps = (apr.raps && apr.raps.length > 0)
-                      ? apr.raps
-                      : juicios.filter(j => j.numDoc === apr.numDoc);
-
-                    const aprobadosCount = apr.aprobados !== undefined
-                      ? apr.aprobados
-                      : learnerRaps.filter(r => String(r.juicio || '').toUpperCase().includes('APROBADO') && !String(r.juicio || '').toUpperCase().includes('NO')).length;
-
-                    const noAprobadosCount = apr.noAprobados !== undefined
-                      ? apr.noAprobados
-                      : learnerRaps.filter(r => String(r.juicio || '').toUpperCase().includes('NO APROBADO') || String(r.juicio || '').toUpperCase().includes('DEFICIENTE')).length;
-
-                    const pendientesCount = apr.pendientes !== undefined
-                      ? apr.pendientes
-                      : learnerRaps.filter(r => {
-                          const ju = String(r.juicio || '').toUpperCase();
-                          return ju.includes('POR EVALUAR') || ju.includes('PENDIENTE') || (!ju.includes('APROBADO'));
-                        }).length;
-
-                    const totalRaps = learnerRaps.length > 0 
-                      ? learnerRaps.length 
-                      : (apr.totalRaps || (activeProject?.totalRapsRegistrados || 75));
-
-                    const pctApr = totalRaps > 0 ? Math.round((aprobadosCount / totalRaps) * 100) : 0;
-                    const pctPend = totalRaps > 0 ? Math.round((pendientesCount / totalRaps) * 100) : 0;
-                    const pctNoApr = totalRaps > 0 ? Math.round((noAprobadosCount / totalRaps) * 100) : 0;
-                    const enForm = isEnFormacion(apr.estado);
+                  sortedLearnersList.map((apr, idx) => {
+                    const { aprobadosCount, noAprobadosCount, pendientesCount, totalRaps, pctApr, pctPend, pctNoApr, enForm } = apr;
 
                     return (
                       <tr key={idx} style={{ background: enForm ? 'transparent' : '#f8fafc', opacity: enForm ? 1 : 0.75 }}>

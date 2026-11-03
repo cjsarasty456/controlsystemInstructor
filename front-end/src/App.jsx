@@ -158,12 +158,14 @@ export default function App() {
           numeroFicha: newFichaData.numero,
           programaNombre: newFichaData.programa,
           programaCodigo: newFichaData.codigo || '228118',
+          programaVersion: newFichaData.version || '1',
           jornada: newFichaData.jornada || 'PRESENCIAL',
           fechaInicio: newFichaData.fechaInicio || '2024-12-16',
           fechaFin: newFichaData.fechaFin || '2027-05-07',
           regional: newFichaData.regional || '41 - REGIONAL HUILA',
           sedeCentro: newFichaData.centro || '9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS',
-          estado: newFichaData.estado || 'EN EJECUCION'
+          estado: newFichaData.estado || 'EN EJECUCION',
+          reporteProyectoJson: newFichaData.reporteProyecto ? JSON.stringify(newFichaData.reporteProyecto) : null
         });
         backendId = savedBackend.id;
       } catch (e) {
@@ -175,8 +177,9 @@ export default function App() {
       id: 'ficha_' + newFichaData.numero,
       backendId,
       ...newFichaData,
-      version: '1',
-      reporteProyecto: DEFAULT_ADSO_PROJECT,
+      reporteProyecto: newFichaData.reporteProyecto !== undefined
+        ? newFichaData.reporteProyecto
+        : (newFichaData.tipoFormacion === 'COMPLEMENTARIA' ? null : DEFAULT_ADSO_PROJECT),
       aprendices: [],
       historialCargues: [],
       reportes: [],
@@ -405,6 +408,34 @@ export default function App() {
               <i className="ph ph-database" style={{ fontSize: '1.1rem', color: '#39A900' }}></i>
               <span>Copia de Seguridad</span>
             </button>
+
+            {/* Acceso Directo a Documentación Swagger UI / OpenAPI 3 */}
+            {backendStatus.online && (
+              <a 
+                href="http://localhost:8080/swagger-ui.html" 
+                target="_blank" 
+                rel="noreferrer"
+                className="btn btn-secondary" 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: '0.45rem', 
+                  padding: '0.4rem 0.85rem', 
+                  fontSize: '0.82rem', 
+                  background: '#ffffff', 
+                  color: '#00324D', 
+                  border: '1px solid #cbd5e1',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: '600',
+                  textDecoration: 'none'
+                }}
+                title="Abrir documentación Swagger UI interactiva de la API REST"
+              >
+                <i className="ph ph-brackets-angle" style={{ fontSize: '1.1rem', color: '#0284c7' }}></i>
+                <span>Swagger API</span>
+              </a>
+            )}
 
             {/* Indicador de Estado del Backend Spring Boot */}
             <div 
