@@ -24,6 +24,19 @@ export default function EvaluadorReglamentoModal({
   const [reglamentoInfo, setReglamentoInfo] = useState(DEFAULT_REGLAMENTO_INFO);
   const [searchArticle, setSearchArticle] = useState('');
 
+  // Ordenamiento de tabla de Auditoría de Riesgos
+  const [riesgosSortField, setRiesgosSortField] = useState('reprobados');
+  const [riesgosSortOrder, setRiesgosSortOrder] = useState('desc');
+
+  const handleSortRiesgos = (field) => {
+    if (riesgosSortField === field) {
+      setRiesgosSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setRiesgosSortField(field);
+      setRiesgosSortOrder(field === 'pctAvance' || field === 'reprobados' ? 'desc' : 'asc');
+    }
+  };
+
   if (!isOpen || !ficha) return null;
 
   const aprendices = ficha.aprendices || [];
@@ -91,6 +104,33 @@ export default function EvaluadorReglamentoModal({
       };
     }).filter(a => a.nivelRiesgo !== 'Bajo');
   }, [aprendicesEnFormacion]);
+
+  // Lista ordenada de aprendices en riesgo
+  const sortedAprendicesEnRiesgo = useMemo(() => {
+    return [...aprendicesEnRiesgo].sort((a, b) => {
+      let valA = a[riesgosSortField];
+      let valB = b[riesgosSortField];
+
+      if (riesgosSortField === 'pctAvance') {
+        valA = parseFloat(valA) || 0;
+        valB = parseFloat(valB) || 0;
+      } else if (riesgosSortField === 'reprobados' || riesgosSortField === 'pendientes' || riesgosSortField === 'aprobados') {
+        valA = Number(valA) || 0;
+        valB = Number(valB) || 0;
+      } else if (riesgosSortField === 'nivelRiesgo') {
+        const severidad = { 'Crítico': 3, 'Medio': 2, 'Moderado': 1, 'Bajo': 0 };
+        valA = severidad[a.nivelRiesgo] || 0;
+        valB = severidad[b.nivelRiesgo] || 0;
+      } else {
+        valA = String(valA || '').toLowerCase();
+        valB = String(valB || '').toLowerCase();
+      }
+
+      if (valA < valB) return riesgosSortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return riesgosSortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+  }, [aprendicesEnRiesgo, riesgosSortField, riesgosSortOrder]);
 
   const handleCopyCitation = () => {
     if (dictamen && dictamen.textoCitacion) {
@@ -316,50 +356,94 @@ export default function EvaluadorReglamentoModal({
                   <p>Todos los aprendices en formación presentan rendimiento académico aceptable y sin juicios reprobados.</p>
                 </div>
               ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Documento</th>
-                      <th>Aprendiz</th>
-                      <th>Avance RAPs</th>
-                      <th>Reprobados</th>
-                      <th>Nivel de Riesgo</th>
-                      <th>Causal / Dictamen</th>
-                      <th>Acción</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {aprendicesEnRiesgo.map((a, i) => (
-                      <tr key={i}>
-                        <td><strong>{a.numDoc}</strong></td>
-                        <td>{a.nombreCompleto}</td>
-                        <td>
-                          <span className="code-tag">{a.aprobados} / {a.totalRaps || (a.raps || []).length} ({a.pctAvance}%)</span>
-                        </td>
-                        <td>
-                          <span className={`judgment-badge ${a.reprobados > 0 ? 'no-aprobado' : 'pendiente'}`}>
-                            {a.reprobados} No Aprobados
-                          </span>
-                        </td>
-                        <td>
-                          <span className={`badge ${a.nivelRiesgo === 'Crítico' ? 'red' : 'warning'}`}>
-                            {a.nivelRiesgo}
-                          </span>
-                        </td>
-                        <td><small>{a.motivoRiesgo}</small></td>
-                        <td>
-                          <button 
-                            className="btn btn-secondary" 
-                            style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
-                            onClick={() => handleSelectToEvaluate(a)}
-                          >
-                            <i className="ph ph-gavel"></i> Evaluar Caso
-                          </button>
-                        </td>
+                <>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.65rem' }}>
+                    <small style={{ color: 'var(--text-secondary)' }}>Haz clic en cualquier columna para ordenar los registros</small>
+                    <small style={{ color: 'var(--text-muted)' }}>
+                      <i className="ph ph-funnel"></i> Ordenado por: <strong>{
+                        riesgosSortField === 'numDoc' ? 'Documento' :
+                        riesgosSortField === 'nombreCompleto' ? 'Aprendiz' :
+                        riesgosSortField === 'pctAvance' ? 'Avance RAPs' :
+                        riesgosSortField === 'reprobados' ? 'Reprobados' :
+                        riesgosSortField === 'nivelRiesgo' ? 'Nivel de Riesgo' : 'Causal'
+                      }</strong> ({riesgosSortOrder === 'asc' ? 'Ascendente ↑' : 'Descendente ↓'})
+                    </small>
+                  </div>
+                  <table className="data-table">
+                    <thead>
+                      <tr>
+                        <th onClick={() => handleSortRiesgos('numDoc')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Documento">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            Documento
+                            <i className={`ph ${riesgosSortField === 'numDoc' ? (riesgosSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: riesgosSortField === 'numDoc' ? '#39A900' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th onClick={() => handleSortRiesgos('nombreCompleto')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Aprendiz">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            Aprendiz
+                            <i className={`ph ${riesgosSortField === 'nombreCompleto' ? (riesgosSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: riesgosSortField === 'nombreCompleto' ? '#39A900' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th onClick={() => handleSortRiesgos('pctAvance')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Avance RAPs">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            Avance RAPs
+                            <i className={`ph ${riesgosSortField === 'pctAvance' ? (riesgosSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: riesgosSortField === 'pctAvance' ? '#39A900' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th onClick={() => handleSortRiesgos('reprobados')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por RAPs Reprobados">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            Reprobados
+                            <i className={`ph ${riesgosSortField === 'reprobados' ? (riesgosSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: riesgosSortField === 'reprobados' ? '#39A900' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th onClick={() => handleSortRiesgos('nivelRiesgo')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Nivel de Riesgo">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            Nivel de Riesgo
+                            <i className={`ph ${riesgosSortField === 'nivelRiesgo' ? (riesgosSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: riesgosSortField === 'nivelRiesgo' ? '#39A900' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th onClick={() => handleSortRiesgos('motivoRiesgo')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Causal">
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            Causal / Dictamen
+                            <i className={`ph ${riesgosSortField === 'motivoRiesgo' ? (riesgosSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: riesgosSortField === 'motivoRiesgo' ? '#39A900' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th>Acción</th>
                       </tr>
-                    ))}
-                  </tbody>
-                </table>
+                    </thead>
+                    <tbody>
+                      {sortedAprendicesEnRiesgo.map((a, i) => (
+                        <tr key={i}>
+                          <td><strong>{a.numDoc}</strong></td>
+                          <td>{a.nombreCompleto}</td>
+                          <td>
+                            <span className="code-tag">{a.aprobados} / {a.totalRaps || (a.raps || []).length} ({a.pctAvance}%)</span>
+                          </td>
+                          <td>
+                            <span className={`judgment-badge ${a.reprobados > 0 ? 'no-aprobado' : 'pendiente'}`}>
+                              {a.reprobados} No Aprobados
+                            </span>
+                          </td>
+                          <td>
+                            <span className={`badge ${a.nivelRiesgo === 'Crítico' ? 'red' : 'warning'}`}>
+                              {a.nivelRiesgo}
+                            </span>
+                          </td>
+                          <td><small>{a.motivoRiesgo}</small></td>
+                          <td>
+                            <button 
+                              className="btn btn-secondary" 
+                              style={{ padding: '0.25rem 0.55rem', fontSize: '0.75rem' }}
+                              onClick={() => handleSelectToEvaluate(a)}
+                            >
+                              <i className="ph ph-gavel"></i> Evaluar Caso
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </>
               )}
             </div>
           )}

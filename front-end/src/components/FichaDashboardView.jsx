@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import { getFaseForRapAndCompetencia } from '../services/projectReportService';
 
 const isEnFormacion = (estado) => {
@@ -14,6 +14,9 @@ export default function FichaDashboardView({
   onOpenReglamentoModal,
   onFilterByFase
 }) {
+  const [dashboardSortField, setDashboardSortField] = useState('pctAvance');
+  const [dashboardSortOrder, setDashboardSortOrder] = useState('asc');
+
   if (!ficha) return null;
 
   const aprendices = ficha.aprendices || [];
@@ -150,6 +153,39 @@ export default function FichaDashboardView({
   const aprendicesDestacados = useMemo(() => aprendicesStats.filter(a => a.nivel === 'ALTO'), [aprendicesStats]);
   const aprendicesMedio = useMemo(() => aprendicesStats.filter(a => a.nivel === 'MEDIO'), [aprendicesStats]);
   const aprendicesEnRiesgo = useMemo(() => aprendicesStats.filter(a => a.nivel === 'CRITICO'), [aprendicesStats]);
+
+  const handleDashboardSort = (field) => {
+    if (dashboardSortField === field) {
+      setDashboardSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setDashboardSortField(field);
+      setDashboardSortOrder('asc');
+    }
+  };
+
+  const sortedAprendicesEnRiesgo = useMemo(() => {
+    const list = [...aprendicesEnRiesgo];
+    return list.sort((a, b) => {
+      let valA = a[dashboardSortField];
+      let valB = b[dashboardSortField];
+
+      if (dashboardSortField === 'numDoc') {
+        const nA = parseInt(String(valA).replace(/\D/g, ''), 10) || 0;
+        const nB = parseInt(String(valB).replace(/\D/g, ''), 10) || 0;
+        return dashboardSortOrder === 'asc' ? nA - nB : nB - nA;
+      }
+
+      if (dashboardSortField === 'pctAvance' || dashboardSortField === 'noAprobados') {
+        return dashboardSortOrder === 'asc' ? valA - valB : valB - valA;
+      }
+
+      valA = String(valA || '').toLowerCase();
+      valB = String(valB || '').toLowerCase();
+      return dashboardSortOrder === 'asc'
+        ? valA.localeCompare(valB, 'es', { numeric: true })
+        : valB.localeCompare(valA, 'es', { numeric: true });
+    });
+  }, [aprendicesEnRiesgo, dashboardSortField, dashboardSortOrder]);
 
   // 6. Análisis de Competencias (Top Aprobadas vs Cuello de Botella)
   const competenciasAnalysis = useMemo(() => {
@@ -540,15 +576,51 @@ export default function FichaDashboardView({
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.82rem' }}>
                 <thead>
                   <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', textAlign: 'left' }}>
-                    <th style={{ padding: '0.6rem 0.85rem' }}>Documento</th>
-                    <th style={{ padding: '0.6rem 0.85rem' }}>Aprendiz</th>
-                    <th style={{ padding: '0.6rem 0.85rem' }}>Avance</th>
-                    <th style={{ padding: '0.6rem 0.85rem' }}>No Aprobados</th>
+                    <th 
+                      onClick={() => handleDashboardSort('numDoc')}
+                      style={{ padding: '0.6rem 0.85rem', cursor: 'pointer', userSelect: 'none' }}
+                      title="Ordenar por Documento"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>Documento</span>
+                        <i className={`ph ${dashboardSortField === 'numDoc' ? (dashboardSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: dashboardSortField === 'numDoc' ? '#0284c7' : '#94a3b8' }}></i>
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleDashboardSort('nombre')}
+                      style={{ padding: '0.6rem 0.85rem', cursor: 'pointer', userSelect: 'none' }}
+                      title="Ordenar por Aprendiz"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>Aprendiz</span>
+                        <i className={`ph ${dashboardSortField === 'nombre' ? (dashboardSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: dashboardSortField === 'nombre' ? '#0284c7' : '#94a3b8' }}></i>
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleDashboardSort('pctAvance')}
+                      style={{ padding: '0.6rem 0.85rem', cursor: 'pointer', userSelect: 'none' }}
+                      title="Ordenar por Avance"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>Avance</span>
+                        <i className={`ph ${dashboardSortField === 'pctAvance' ? (dashboardSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: dashboardSortField === 'pctAvance' ? '#0284c7' : '#94a3b8' }}></i>
+                      </div>
+                    </th>
+                    <th 
+                      onClick={() => handleDashboardSort('noAprobados')}
+                      style={{ padding: '0.6rem 0.85rem', cursor: 'pointer', userSelect: 'none' }}
+                      title="Ordenar por No Aprobados"
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                        <span>No Aprobados</span>
+                        <i className={`ph ${dashboardSortField === 'noAprobados' ? (dashboardSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: dashboardSortField === 'noAprobados' ? '#0284c7' : '#94a3b8' }}></i>
+                      </div>
+                    </th>
                     <th style={{ padding: '0.6rem 0.85rem', textAlign: 'right' }}>Acción Reglamento</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {aprendicesEnRiesgo.map((apr, i) => (
+                  {sortedAprendicesEnRiesgo.map((apr, i) => (
                     <tr key={i} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td style={{ padding: '0.6rem 0.85rem', fontFamily: 'monospace', fontWeight: '600', color: '#00324D' }}>
                         {apr.numDoc}

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { 
   BACKUP_EXPORT_JSON_URL, 
   BACKUP_EXPORT_SQL_URL, 
@@ -21,6 +21,48 @@ export default function BackupModal({
   const [selectedFile, setSelectedFile] = useState(null);
   const [feedback, setFeedback] = useState(null); // { type: 'success' | 'error', text: string }
   const [confirmRestoreTarget, setConfirmRestoreTarget] = useState(null);
+
+  // Estados de ordenamiento de respaldos en servidor
+  const [backupSortField, setBackupSortField] = useState('lastModified');
+  const [backupSortOrder, setBackupSortOrder] = useState('desc');
+
+  const handleSortBackups = (field) => {
+    if (backupSortField === field) {
+      setBackupSortOrder(prev => prev === 'asc' ? 'desc' : 'asc');
+    } else {
+      setBackupSortField(field);
+      setBackupSortOrder(field === 'lastModified' || field === 'sizeBytes' ? 'desc' : 'asc');
+    }
+  };
+
+  const sortedServerBackups = useMemo(() => {
+    const list = [...serverBackups];
+    return list.sort((a, b) => {
+      if (backupSortField === 'sizeBytes') {
+        const sA = a.sizeBytes || 0;
+        const sB = b.sizeBytes || 0;
+        return backupSortOrder === 'asc' ? sA - sB : sB - sA;
+      }
+
+      if (backupSortField === 'isSql') {
+        const isSqlA = a.isSql ? 1 : 0;
+        const isSqlB = b.isSql ? 1 : 0;
+        return backupSortOrder === 'asc' ? isSqlA - isSqlB : isSqlB - isSqlA;
+      }
+
+      if (backupSortField === 'lastModified') {
+        const dA = new Date(a.lastModified).getTime() || 0;
+        const dB = new Date(b.lastModified).getTime() || 0;
+        return backupSortOrder === 'asc' ? dA - dB : dB - dA;
+      }
+
+      const strA = String(a.fileName || a.nombre || '').toLowerCase();
+      const strB = String(b.fileName || b.nombre || '').toLowerCase();
+      return backupSortOrder === 'asc'
+        ? strA.localeCompare(strB, 'es')
+        : strB.localeCompare(strA, 'es');
+    });
+  }, [serverBackups, backupSortField, backupSortOrder]);
 
   // Totales actuales para el resumen
   const totalFichas = fichas.length;
@@ -486,15 +528,51 @@ export default function BackupModal({
                   <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.85rem' }}>
                     <thead>
                       <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569', textAlign: 'left' }}>
-                        <th style={{ padding: '0.65rem 1rem' }}>Archivo</th>
-                        <th style={{ padding: '0.65rem 1rem' }}>Tipo</th>
-                        <th style={{ padding: '0.65rem 1rem' }}>Tamaño</th>
-                        <th style={{ padding: '0.65rem 1rem' }}>Fecha de Creación</th>
+                        <th 
+                          onClick={() => handleSortBackups('fileName')} 
+                          style={{ padding: '0.65rem 1rem', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Nombre de Archivo"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span>Archivo</span>
+                            <i className={`ph ${backupSortField === 'fileName' ? (backupSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: backupSortField === 'fileName' ? '#00324D' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSortBackups('isSql')} 
+                          style={{ padding: '0.65rem 1rem', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Tipo de Archivo"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span>Tipo</span>
+                            <i className={`ph ${backupSortField === 'isSql' ? (backupSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: backupSortField === 'isSql' ? '#00324D' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSortBackups('sizeBytes')} 
+                          style={{ padding: '0.65rem 1rem', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Tamaño"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span>Tamaño</span>
+                            <i className={`ph ${backupSortField === 'sizeBytes' ? (backupSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: backupSortField === 'sizeBytes' ? '#00324D' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
+                        <th 
+                          onClick={() => handleSortBackups('lastModified')} 
+                          style={{ padding: '0.65rem 1rem', cursor: 'pointer', userSelect: 'none' }}
+                          title="Ordenar por Fecha de Creación"
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                            <span>Fecha de Creación</span>
+                            <i className={`ph ${backupSortField === 'lastModified' ? (backupSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: backupSortField === 'lastModified' ? '#00324D' : '#94a3b8' }}></i>
+                          </div>
+                        </th>
                         <th style={{ padding: '0.65rem 1rem', textAlign: 'right' }}>Acción</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {serverBackups.map((bk, idx) => {
+                      {sortedServerBackups.map((bk, idx) => {
                         const name = bk.fileName || bk.nombre;
                         const isSqlFile = bk.isSql !== undefined ? bk.isSql : (name.endsWith('.sql') || name.endsWith('.sql.gz'));
                         const typeLabel = isSqlFile ? 'SQL' : 'JSON';

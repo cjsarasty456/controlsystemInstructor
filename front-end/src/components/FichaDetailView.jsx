@@ -1604,18 +1604,54 @@ export default function FichaDetailView({
               </div>
 
               <div className="table-container">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem', fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                  <span><i className="ph ph-info"></i> Haz clic en los encabezados para <strong>organizar por columna</strong></span>
+                  <span style={{ color: '#0284c7', fontWeight: '600' }}>
+                    Ordenado por: {
+                      learnerModalSortField === 'fase' ? 'Fase Proyecto' :
+                      learnerModalSortField === 'competencia' ? 'Competencia' :
+                      learnerModalSortField === 'rap' ? 'RAP' :
+                      learnerModalSortField === 'juicio' ? 'Juicio' : 'Fecha'
+                    } ({learnerModalSortOrder === 'asc' ? 'Ascendente ↑' : 'Descendente ↓'})
+                  </span>
+                </div>
                 <table className="data-table">
                   <thead>
                     <tr>
-                      <th>Fase Proyecto</th>
-                      <th>Competencia</th>
-                      <th>Resultado de Aprendizaje (RAP)</th>
-                      <th>Juicio</th>
-                      <th>Fecha</th>
+                      <th onClick={() => handleSortLearnerModal('fase')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Fase">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>Fase Proyecto</span>
+                          <i className={`ph ${learnerModalSortField === 'fase' ? (learnerModalSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnerModalSortField === 'fase' ? 'var(--primary)' : '#94a3b8' }}></i>
+                        </div>
+                      </th>
+                      <th onClick={() => handleSortLearnerModal('competencia')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Competencia">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>Competencia</span>
+                          <i className={`ph ${learnerModalSortField === 'competencia' ? (learnerModalSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnerModalSortField === 'competencia' ? 'var(--primary)' : '#94a3b8' }}></i>
+                        </div>
+                      </th>
+                      <th onClick={() => handleSortLearnerModal('rap')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Resultado de Aprendizaje">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>Resultado de Aprendizaje (RAP)</span>
+                          <i className={`ph ${learnerModalSortField === 'rap' ? (learnerModalSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnerModalSortField === 'rap' ? 'var(--primary)' : '#94a3b8' }}></i>
+                        </div>
+                      </th>
+                      <th onClick={() => handleSortLearnerModal('juicio')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Juicio Evaluativo">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>Juicio</span>
+                          <i className={`ph ${learnerModalSortField === 'juicio' ? (learnerModalSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnerModalSortField === 'juicio' ? 'var(--primary)' : '#94a3b8' }}></i>
+                        </div>
+                      </th>
+                      <th onClick={() => handleSortLearnerModal('fechaHora')} style={{ cursor: 'pointer', userSelect: 'none' }} title="Ordenar por Fecha">
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                          <span>Fecha</span>
+                          <i className={`ph ${learnerModalSortField === 'fechaHora' ? (learnerModalSortOrder === 'asc' ? 'ph-caret-up' : 'ph-caret-down') : 'ph-arrows-down-up'}`} style={{ color: learnerModalSortField === 'fechaHora' ? 'var(--primary)' : '#94a3b8' }}></i>
+                        </div>
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {(selectedLearnerModal.raps || []).map((r, i) => {
+                    {sortedLearnerModalRaps.map((r, i) => {
                       const fase = getFaseForRapAndCompetencia(r.rap, r.competencia, activeProject);
                       const badgeClass = r.juicio === 'APROBADO' ? 'aprobado' : (r.juicio === 'NO APROBADO' ? 'no-aprobado' : 'pendiente');
                       return (
