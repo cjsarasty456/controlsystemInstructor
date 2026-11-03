@@ -95,3 +95,4 @@ Conforme a la reglamentación del Estatuto de la Formación Profesional Integral
 - **Componente Modal:** `front-end/src/components/FichaModal.jsx`
 - **Catálogo Institucional:** Constante `PROGRAMAS_CATALOGO` y unificación con `fichas.map(f => f.programa)`.
 - **Servicio de Persistencia:** Invocación a `fichaService.create()` con payload estructurado y generación de identificadores `UUIDv4`.
+

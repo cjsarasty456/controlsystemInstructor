@@ -121,3 +121,4 @@ Garantiza unicidad temporal, orden cronológico natural en listados y trazabilid
 | `POST` | `/api/backup/restore-upload` | Sube un archivo `.sql` y lo restaura | `multipart/form-data` (`file`) |
 | `GET` | `/api/backup/export-json` | Genera volcado portátil JSON de todas las tablas | Retorna JSON estructurado |
 | `POST` | `/api/backup/import-json` | Restaura el sistema a partir de volcado JSON | Body JSON (`FullDatabaseDTO`) |
+

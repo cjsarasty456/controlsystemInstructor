@@ -126,4 +126,15 @@ export const importBackupFileApi = async (file) => {
   return await res.json();
 };
 
+export const cleanDatabaseApi = async () => {
+  const res = await fetch(`${API_BASE_URL}/backup/clean-database`, {
+    method: 'POST'
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${res.status} al limpiar la base de datos.`);
+  }
+  return await res.json();
+};
+
 

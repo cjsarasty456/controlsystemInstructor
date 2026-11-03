@@ -143,5 +143,19 @@ public class BackupController {
                     .body(Map.of("error", "Error restaurando desde servidor: " + e.getMessage()));
         }
     }
+
+    /**
+     * Limpia completamente la base de datos para pruebas
+     */
+    @PostMapping("/clean-database")
+    public ResponseEntity<?> cleanDatabase() {
+        try {
+            Map<String, Object> result = backupService.cleanDatabase();
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Error limpiando la base de datos: " + e.getMessage()));
+        }
+    }
 }
 

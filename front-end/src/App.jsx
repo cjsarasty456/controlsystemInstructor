@@ -13,7 +13,8 @@ import {
   fetchFichaDetailApi, 
   createFichaApi, 
   uploadJuiciosExcelApi, 
-  saveProjectReportApi 
+  saveProjectReportApi,
+  cleanDatabaseApi 
 } from './services/apiService';
 import { DEFAULT_ADSO_PROJECT } from './services/projectReportService';
 import { generateUUID } from './utils/uuid';
@@ -233,6 +234,27 @@ export default function App() {
     }
   };
 
+  // Limpiar Base de Datos para Pruebas (PostgreSQL + LocalStorage)
+  const handleCleanDatabaseForTesting = async () => {
+    const confirmClean = window.confirm(
+      "¿Desea limpiar completamente la Base de Datos para pruebas?\n\nEsta acción eliminará todas las fichas, aprendices, juicios de RAPs e historial de cargues en PostgreSQL y reiniciará el almacenamiento local para iniciar un nuevo ciclo de pruebas limpias."
+    );
+    if (!confirmClean) return;
+
+    try {
+      if (backendStatus.online) {
+        await cleanDatabaseApi();
+      }
+      localStorage.removeItem('controlsystem_fichas_react_v1');
+      setFichas([]);
+      setCurrentFichaId(null);
+      showToast("Base de datos PostgreSQL y caché limpiados exitosamente para pruebas.");
+    } catch (err) {
+      console.error("Error al limpiar BD:", err);
+      alert("Error al limpiar la base de datos: " + err.message);
+    }
+  };
+
   // Confirmar Importación con Deduplicación y Registro de Actualización
   const handleConfirmImport = async () => {
     if (!previewParsedData || !currentFicha) return;
@@ -415,6 +437,29 @@ export default function App() {
             >
               <i className="ph ph-database" style={{ fontSize: '1.1rem', color: '#39A900' }}></i>
               <span>Copia de Seguridad</span>
+            </button>
+
+            {/* Botón Rápido: Limpiar Base de Datos para Pruebas */}
+            <button 
+              className="btn btn-secondary" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                padding: '0.4rem 0.85rem', 
+                fontSize: '0.82rem', 
+                background: '#fff1f2', 
+                color: '#e11d48', 
+                border: '1px solid #fecdd3',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+              onClick={handleCleanDatabaseForTesting}
+              title="Limpiar Base de Datos PostgreSQL y Caché para Pruebas"
+            >
+              <i className="ph ph-trash" style={{ fontSize: '1.1rem', color: '#e11d48' }}></i>
+              <span>Limpiar BD (Pruebas)</span>
             </button>
 
             {/* Acceso Directo a Documentación Swagger UI / OpenAPI 3 */}

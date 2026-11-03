@@ -102,3 +102,4 @@ El sistema calcula la tasa de reprobación y de pendientes por competencia técn
 | `LearnerCard.jsx` | `front-end/src/components/LearnerCard.jsx` | Tarjeta individual con progreso porcentual y estado de RAPs |
 | `FichaDetail.jsx` | `front-end/src/components/FichaDetail.jsx` | Orquestador de vistas: Tablero, Aprendices, Cargues, Proyecto |
 | `AprendicesTable.jsx` | `front-end/src/components/AprendicesTable.jsx` | Tabla consolidada con ordenamiento y filtros por estado |
+

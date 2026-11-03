@@ -49,31 +49,31 @@ export const DEFAULT_ADSO_PROJECT = {
         {
           codigo: '220501046',
           nombre: 'Utilizar herramientas informáticas (TIC)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593151', '593152', '593153', '593154']
         },
         {
           codigo: '240201524',
           nombre: 'Desarrollar procesos de comunicación eficaces y asertivos',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593140', '593141', '593142', '593143']
         },
         {
           codigo: '240201528',
           nombre: 'Razonar cuantitativamente (Matemáticas - Fase Inicial)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593144', '593145']
         },
         {
           codigo: '220201501',
           nombre: 'Aplicar principios físicos en la resolución de problemas (Física)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593155', '593156', '593157', '593158']
         },
         {
           codigo: '240202501',
           nombre: 'Interactuar en lengua inglesa (Nivel Inicial)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593117', '593118']
         }
       ]
@@ -125,7 +125,7 @@ export const DEFAULT_ADSO_PROJECT = {
         {
           codigo: '240202501',
           nombre: 'Interactuar en lengua inglesa (Nivel Intermedio)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593119', '593120']
         }
       ]
@@ -160,13 +160,13 @@ export const DEFAULT_ADSO_PROJECT = {
         {
           codigo: '240201528',
           nombre: 'Razonar cuantitativamente (Matemáticas aplicadas a algoritmos)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593146', '593147']
         },
         {
           codigo: '240202501',
           nombre: 'Interactuar en lengua inglesa (Nivel Técnico Avanzado)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593121', '593122']
         }
       ]
@@ -194,7 +194,7 @@ export const DEFAULT_ADSO_PROJECT = {
         {
           codigo: '240202501',
           nombre: 'Interactuar en lengua inglesa (Sustentación de cierre)',
-          tipo: 'Transversal',
+          tipo: 'Clave',
           raps: ['593123']
         }
       ]
@@ -397,4 +397,39 @@ export const parseProjectReportFile = async (file) => {
     reader.readAsArrayBuffer(file);
   });
 };
+
+/**
+ * Clasifica la competencia según la taxonomía oficial del SENA:
+ * - Técnica (Específica del programa)
+ * - Clave (Básica: Bilingüismo/Inglés, Matemáticas, TIC, Comunicación, Física)
+ * - Transversal (Integralidad: Ética/Paz, Emprendimiento, SST/Ambiental, Derechos, Deporte)
+ */
+export const getCompetenciaTipo = (compStr = '') => {
+  const norm = String(compStr || '').toUpperCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+  // Competencias Clave
+  if (
+    norm.includes('240202501') || norm.includes('INGLES') || norm.includes('INGLESA') ||
+    norm.includes('240201528') || norm.includes('MATEMATICA') || norm.includes('CUANTITATIV') ||
+    norm.includes('220501046') || norm.includes('TIC') || norm.includes('HERRAMIENTAS INFORMATICAS') ||
+    norm.includes('240201524') || norm.includes('COMUNICACION') ||
+    norm.includes('220201501') || norm.includes('FISICA')
+  ) {
+    return 'Clave';
+  }
+
+  // Competencias Técnicas
+  if (
+    norm.includes('220501092') || norm.includes('220501093') || norm.includes('220501094') ||
+    norm.includes('220501095') || norm.includes('220501096') || norm.includes('220501097') ||
+    norm.includes('220501098') || norm.includes('SOFTWARE') || norm.includes('REQUISITOS') ||
+    norm.includes('ARQUITECTURA') || norm.includes('CODIFICACION') || norm.includes('PRUEBAS')
+  ) {
+    return 'Técnica';
+  }
+
+  // Transversales (Ética, Emprendimiento, SST, Derechos, Actividad Física, Inducción, Investigación)
+  return 'Transversal';
+};
+
 

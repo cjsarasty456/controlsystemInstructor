@@ -4,7 +4,8 @@ import {
   BACKUP_EXPORT_SQL_URL, 
   fetchServerBackupsApi, 
   restoreServerBackupApi, 
-  importBackupFileApi 
+  importBackupFileApi,
+  cleanDatabaseApi 
 } from '../services/apiService';
 
 export default function BackupModal({
@@ -186,6 +187,32 @@ export default function BackupModal({
     }
   };
 
+  // Limpiar base de datos para pruebas
+  const [isConfirmingClean, setIsConfirmingClean] = useState(false);
+
+  const handleCleanDatabase = async () => {
+    setIsProcessing(true);
+    setFeedback(null);
+    try {
+      let backendMsg = '';
+      if (isBackendOnline) {
+        const res = await cleanDatabaseApi();
+        backendMsg = res.mensaje || 'Base de datos PostgreSQL limpiada.';
+      }
+      localStorage.removeItem('controlsystem_fichas_react_v1');
+      setIsConfirmingClean(false);
+      const fullMsg = backendMsg 
+        ? `${backendMsg} Memoria local y tablas restablecidas para pruebas.`
+        : 'Almacenamiento local limpiado exitosamente para pruebas.';
+      setFeedback({ type: 'success', text: fullMsg });
+      if (onRestoreSuccess) onRestoreSuccess(fullMsg);
+    } catch (err) {
+      setFeedback({ type: 'error', text: 'Error al limpiar base de datos: ' + err.message });
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
     <div className="modal-backdrop">
       <div className="modal-dialog modal-lg" style={{ maxWidth: '850px' }}>
@@ -266,6 +293,26 @@ export default function BackupModal({
           >
             <i className="ph ph-archive" style={{ fontSize: '1.1rem' }}></i>
             3. Respaldos en Servidor ({serverBackups.length})
+          </button>
+
+          <button
+            onClick={() => { setActiveTab('clean'); setFeedback(null); }}
+            style={{
+              padding: '0.65rem 1.1rem',
+              border: 'none',
+              background: 'transparent',
+              borderBottom: activeTab === 'clean' ? '3px solid #dc2626' : '3px solid transparent',
+              fontWeight: activeTab === 'clean' ? '700' : '500',
+              color: activeTab === 'clean' ? '#dc2626' : '#64748b',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.9rem'
+            }}
+          >
+            <i className="ph ph-trash" style={{ fontSize: '1.1rem', color: '#dc2626' }}></i>
+            4. Limpiar para Pruebas
           </button>
         </div>
 
@@ -658,6 +705,117 @@ export default function BackupModal({
                       disabled={isProcessing}
                     >
                       {isProcessing ? 'Restaurando...' : 'Sí, Restaurar Ahora'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+            </div>
+          )}
+
+          {/* PESTAÑA 4: Limpiar Base de Datos para Pruebas */}
+          {activeTab === 'clean' && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+              
+              <div style={{
+                background: '#fff1f2',
+                border: '1px solid #fecdd3',
+                borderRadius: '10px',
+                padding: '1.25rem',
+                display: 'flex',
+                gap: '1rem',
+                alignItems: 'flex-start'
+              }}>
+                <i className="ph ph-warning" style={{ fontSize: '1.8rem', color: '#e11d48', marginTop: '0.15rem' }}></i>
+                <div>
+                  <h4 style={{ margin: '0 0 0.35rem', color: '#9f1239', fontSize: '1.05rem', fontWeight: '700' }}>
+                    Limpieza Total para Pruebas de Desarrollo
+                  </h4>
+                  <p style={{ margin: 0, fontSize: '0.85rem', color: '#be123c', lineHeight: '1.45' }}>
+                    Esta función vacía todas las tablas en la base de datos PostgreSQL (Fichas, Aprendices, Juicios de RAPs, Historial de Cargues y Citaciones) y reinicia el almacenamiento local del navegador, permitiendo iniciar un nuevo ciclo de pruebas desde cero sin necesidad de comandos manuales en la terminal.
+                  </p>
+                </div>
+              </div>
+
+              <div style={{
+                background: '#f8fafc',
+                border: '1px solid #e2e8f0',
+                borderRadius: '8px',
+                padding: '1rem 1.25rem'
+              }}>
+                <h5 style={{ margin: '0 0 0.6rem', color: '#00324D', fontSize: '0.88rem' }}>
+                  Elementos que se restablecerán a cero (0):
+                </h5>
+                <ul style={{ margin: 0, paddingLeft: '1.2rem', fontSize: '0.82rem', color: '#475569', display: 'flex', flexDirection: 'column', gap: '0.35rem' }}>
+                  <li><strong>Fichas de Formación:</strong> Se eliminan todas las fichas creadas en base de datos.</li>
+                  <li><strong>Aprendices y Juicios:</strong> Se vacían los aprendices y sus RAPs evaluados de SOFIA Plus.</li>
+                  <li><strong>Historial de Cargues:</strong> Se resetea el consecutivo de archivos Excel procesados.</li>
+                  <li><strong>Caché del Navegador:</strong> Se borra la clave <code>controlsystem_fichas_react_v1</code> de localStorage.</li>
+                </ul>
+              </div>
+
+              {!isConfirmingClean ? (
+                <div style={{ display: 'flex', justifyContent: 'flex-start' }}>
+                  <button
+                    className="btn btn-primary"
+                    style={{
+                      background: '#dc2626',
+                      borderColor: '#dc2626',
+                      padding: '0.65rem 1.25rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem',
+                      fontSize: '0.9rem',
+                      fontWeight: '700'
+                    }}
+                    onClick={() => setIsConfirmingClean(true)}
+                    disabled={isProcessing}
+                  >
+                    <i className="ph ph-trash" style={{ fontSize: '1.15rem' }}></i>
+                    Limpiar Base de Datos para Pruebas
+                  </button>
+                </div>
+              ) : (
+                <div style={{
+                  padding: '1.1rem 1.25rem',
+                  background: '#fef2f2',
+                  border: '1px solid #f87171',
+                  borderRadius: '8px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.85rem'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <i className="ph ph-warning-octagon" style={{ color: '#dc2626', fontSize: '1.4rem' }}></i>
+                    <strong style={{ color: '#991b1b', fontSize: '0.95rem' }}>
+                      ¿Confirmar limpieza total de la base de datos?
+                    </strong>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.82rem', color: '#7f1d1d' }}>
+                    Esta acción es irreversible y dejará el sistema en estado completamente virgen para realizar nuevas pruebas de cargue.
+                  </p>
+                  <div style={{ display: 'flex', gap: '0.75rem' }}>
+                    <button
+                      className="btn btn-secondary"
+                      style={{ fontSize: '0.82rem', padding: '0.4rem 0.9rem' }}
+                      onClick={() => setIsConfirmingClean(false)}
+                      disabled={isProcessing}
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      className="btn btn-primary"
+                      style={{
+                        background: '#991b1b',
+                        borderColor: '#991b1b',
+                        fontSize: '0.82rem',
+                        padding: '0.4rem 0.9rem',
+                        fontWeight: '700'
+                      }}
+                      onClick={handleCleanDatabase}
+                      disabled={isProcessing}
+                    >
+                      {isProcessing ? 'Limpiando...' : 'Sí, Limpiar Base de Datos Ahora'}
                     </button>
                   </div>
                 </div>

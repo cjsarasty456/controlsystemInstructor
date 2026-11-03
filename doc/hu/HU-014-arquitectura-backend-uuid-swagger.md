@@ -130,3 +130,4 @@ flowchart TD
 - **Dado** que se inicia el servicio backend sobre una base de datos vacía,
 - **Cuando** se consulta `GET /api/fichas`,
 - **Entonces** la respuesta es una lista vacía `[]`, confirmando que ningún componente `DataInitializer` sembró datos ficticios en la base de datos.
+

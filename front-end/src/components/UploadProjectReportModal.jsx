@@ -434,10 +434,11 @@ export default function UploadProjectReportModal({
                                       <span style={{
                                         fontSize: '0.7rem',
                                         fontWeight: '700',
-                                        padding: '0.15rem 0.45rem',
+                                        padding: '0.15rem 0.5rem',
                                         borderRadius: '4px',
-                                        background: comp.tipo === 'Técnica' ? '#e0f2fe' : '#f1f5f9',
-                                        color: comp.tipo === 'Técnica' ? '#0369a1' : '#475569'
+                                        background: comp.tipo === 'Técnica' ? '#e0f2fe' : (comp.tipo === 'Clave' ? '#fef3c7' : '#f1f5f9'),
+                                        color: comp.tipo === 'Técnica' ? '#0369a1' : (comp.tipo === 'Clave' ? '#92400e' : '#475569'),
+                                        border: `1px solid ${comp.tipo === 'Técnica' ? '#bae6fd' : (comp.tipo === 'Clave' ? '#fde68a' : '#e2e8f0')}`
                                       }}>
                                         {comp.tipo || 'Técnica'}
                                       </span>

@@ -468,6 +468,34 @@ public class BackupService {
         throw new IllegalArgumentException("Formato no soportado: " + fileName);
     }
 
+    /**
+     * Limpia completamente la base de datos para pruebas
+     */
+    @Transactional
+    public Map<String, Object> cleanDatabase() {
+        long juiciosCount = juicioDetalleRepository.count();
+        long carguesCount = historialCargueRepository.count();
+        long evaluacionesCount = evaluacionRepository.count();
+        long aprendicesCount = aprendizRepository.count();
+        long fichasCount = fichaRepository.count();
+
+        juicioDetalleRepository.deleteAllInBatch();
+        historialCargueRepository.deleteAllInBatch();
+        evaluacionRepository.deleteAllInBatch();
+        aprendizRepository.deleteAllInBatch();
+        fichaRepository.deleteAllInBatch();
+
+        Map<String, Object> res = new HashMap<>();
+        res.put("mensaje", "Base de datos PostgreSQL limpiada exitosamente para pruebas.");
+        res.put("juiciosEliminados", juiciosCount);
+        res.put("carguesEliminados", carguesCount);
+        res.put("evaluacionesEliminadas", evaluacionesCount);
+        res.put("aprendicesEliminados", aprendicesCount);
+        res.put("fichasEliminadas", fichasCount);
+        res.put("timestamp", LocalDateTime.now().toString());
+        return res;
+    }
+
     private String formatBytes(long bytes) {
         if (bytes < 1024) return bytes + " B";
         int exp = (int) (Math.log(bytes) / Math.log(1024));

@@ -86,3 +86,4 @@ El motor de ordenamiento detecta o clasifica el tipo de dato de la columna para 
   5. `AttendanceList.jsx` (Tabla de sesiones de asistencia).
   6. `WorksList.jsx` (Tabla de trabajos y evidencias).
   7. `HistorialCarguesTable.jsx` (Tabla de auditoría de archivos SOFIA cargados).
+
