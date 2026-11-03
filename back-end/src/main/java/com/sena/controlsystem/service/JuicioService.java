@@ -61,22 +61,29 @@ public class JuicioService {
             for (int r = 0; r <= Math.min(sheet.getLastRowNum(), 25); r++) {
                 Row row = sheet.getRow(r);
                 if (row == null) continue;
-                String colA = formatter.formatCellValue(row.getCell(0)).toLowerCase();
-                String colB = formatter.formatCellValue(row.getCell(1));
+                String colA = formatter.formatCellValue(row.getCell(0)).toLowerCase().trim();
+                
                 if (colA.contains("fecha del reporte")) {
-                    try {
-                        fechaReporte = parseDate(colB);
-                    } catch (Exception ignored) {}
+                    for (int c = 1; c < row.getLastCellNum(); c++) {
+                        String val = formatter.formatCellValue(row.getCell(c)).trim();
+                        if (!val.isEmpty()) {
+                            try {
+                                fechaReporte = parseDate(val);
+                                break;
+                            } catch (Exception ignored) {}
+                        }
+                    }
                 }
 
-                // Detectar encabezados
+                // Detectar encabezados de manera estricta y detenerse
                 StringBuilder rowSb = new StringBuilder();
                 for (int c = 0; c < row.getLastCellNum(); c++) {
                     rowSb.append(formatter.formatCellValue(row.getCell(c))).append(" ");
                 }
-                String rowText = rowSb.toString().toLowerCase();
-                if (rowText.contains("documento") || rowText.contains("juicio de evaluación") || rowText.contains("competencia")) {
+                String rowText = rowSb.toString().toLowerCase().trim();
+                if (rowText.contains("tipo de documento") || (rowText.contains("documento") && rowText.contains("juicio"))) {
                     headerRowIndex = r;
+                    break;
                 }
             }
 
@@ -169,6 +176,14 @@ public class JuicioService {
             Optional<JuicioDetalleEntity> existingJuicio = juicioDetalleRepository
                     .findByAprendizIdAndResultadoAprendizaje(apr.getId(), r.rap);
 
+            if (existingJuicio.isPresent()) {
+                JuicioDetalleEntity existing = existingJuicio.get();
+                // Si ya estaba APROBADO y la fila dice POR EVALUAR o NO APROBADO, conservar APROBADO
+                if ("APROBADO".equals(existing.getJuicioEvaluacion()) && !"APROBADO".equals(r.juicio)) {
+                    continue;
+                }
+            }
+
             JuicioDetalleEntity jEntity = existingJuicio.orElseGet(JuicioDetalleEntity::new);
             boolean eraPrevioNoAprobado = existingJuicio.map(j -> !"APROBADO".equals(j.getJuicioEvaluacion())).orElse(true);
 
@@ -177,8 +192,8 @@ public class JuicioService {
             jEntity.setCompetenciaDenominacion(r.competencia);
             jEntity.setResultadoAprendizaje(r.rap);
             jEntity.setJuicioEvaluacion(r.juicio);
-            jEntity.setFechaHoraJuicio(r.fechaJuicio != null ? r.fechaJuicio : LocalDateTime.now());
-            jEntity.setFuncionarioRegistro(r.funcionario.isEmpty() ? "Carlos Julio Cadena (Instructor)" : r.funcionario);
+            jEntity.setFechaHoraJuicio(r.fechaJuicio);
+            jEntity.setFuncionarioRegistro(r.funcionario.isEmpty() ? ("APROBADO".equals(r.juicio) ? "Carlos Julio Cadena (Instructor)" : "") : r.funcionario);
             jEntity.setActualizadoEn(LocalDateTime.now());
             juicioDetalleRepository.save(jEntity);
 
@@ -224,9 +239,14 @@ public class JuicioService {
 
     private LocalDateTime extractDate(Cell cell, DataFormatter formatter) {
         if (cell == null) return null;
-        if (cell.getCellType() == CellType.NUMERIC && DateUtil.isCellDateFormatted(cell)) {
-            Date d = cell.getDateCellValue();
-            return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+        if (cell.getCellType() == CellType.NUMERIC) {
+            if (DateUtil.isCellDateFormatted(cell)) {
+                Date d = cell.getDateCellValue();
+                return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            } else if (cell.getNumericCellValue() > 40000 && cell.getNumericCellValue() < 60000) {
+                Date d = DateUtil.getJavaDate(cell.getNumericCellValue());
+                return d.toInstant().atZone(ZoneId.systemDefault()).toLocalDateTime();
+            }
         }
         String s = formatter.formatCellValue(cell).trim();
         if (s.isEmpty()) return null;

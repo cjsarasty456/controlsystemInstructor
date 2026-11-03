@@ -125,11 +125,25 @@ export default function FichaDashboardView({
   const aprendicesStats = useMemo(() => {
     return aprendicesEnFormacion.map(apr => {
       const learnerJuicios = juicios.filter(j => j.numDoc === apr.numDoc);
-      const total = learnerJuicios.length > 0 ? learnerJuicios.length : totalRapsPrograma;
-      const aprobados = learnerJuicios.filter(j => j.juicio === 'APROBADO').length;
-      const pendientes = learnerJuicios.filter(j => j.juicio === 'POR EVALUAR').length;
-      const noAprobados = learnerJuicios.filter(j => j.juicio === 'NO APROBADO').length;
-      const pct = total > 0 ? (aprobados / total) * 100 : 0;
+      let total = learnerJuicios.length;
+      let aprobados = learnerJuicios.filter(j => j.juicio === 'APROBADO').length;
+      let pendientes = learnerJuicios.filter(j => j.juicio === 'POR EVALUAR').length;
+      let noAprobados = learnerJuicios.filter(j => j.juicio === 'NO APROBADO').length;
+
+      // Si learnerJuicios está vacío pero apr tiene raps o estadísticas directas:
+      if (total === 0 && apr.raps && apr.raps.length > 0) {
+        total = apr.raps.length;
+        aprobados = apr.raps.filter(r => r.juicio === 'APROBADO').length;
+        pendientes = apr.raps.filter(r => r.juicio === 'POR EVALUAR').length;
+        noAprobados = apr.raps.filter(r => r.juicio === 'NO APROBADO').length;
+      } else if (total === 0 && apr.totalRaps > 0) {
+        total = apr.totalRaps;
+        aprobados = apr.aprobados || 0;
+        pendientes = apr.pendientes || 0;
+        noAprobados = apr.noAprobados || 0;
+      }
+      if (total === 0) total = totalRapsPrograma;
+      const pct = total > 0 ? (aprobados / total) * 100 : (apr.pctAprobado || 0);
 
       let nivel = 'ALTO'; // >= 70%
       if (noAprobados > 0 || pct < 40) {

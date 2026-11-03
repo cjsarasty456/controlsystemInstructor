@@ -50,27 +50,35 @@ export const parseSenaExcelReport = async (file) => {
           if (!row || row.length === 0) continue;
 
           const colA = String(row[0] || '').trim().toLowerCase();
-          const colB = String(row[1] || '').trim();
+          // Obtener el primer valor no vacío de la fila después de la columna 0 (SOFIA Plus suele ponerlo en columna 2)
+          let metaVal = '';
+          for (let c = 1; c < (row || []).length; c++) {
+            if (row[c] !== undefined && row[c] !== null && String(row[c]).trim() !== '') {
+              metaVal = String(row[c]).trim();
+              break;
+            }
+          }
 
-          if (colA.includes('fecha del reporte')) meta.fechaReporte = colB;
-          if (colA.includes('ficha de caracterizaci')) meta.numeroFicha = colB;
-          if (colA.includes('cógigo') || colA.includes('código')) meta.codigoPrograma = colB;
-          if (colA.includes('versión') || colA.includes('version')) meta.version = colB;
-          if (colA.includes('denominación') || colA.includes('denominacion')) meta.denominacion = colB;
-          if (colA.includes('estado de la ficha')) meta.estadoFicha = colB;
-          if (colA.includes('fecha inicio')) meta.fechaInicio = colB;
-          if (colA.includes('fecha fin')) meta.fechaFin = colB;
-          if (colA.includes('modalidad de formación')) meta.modalidad = colB;
-          if (colA.includes('regional')) meta.regional = colB;
-          if (colA.includes('centro de formación')) meta.centro = colB;
+          if (colA.includes('fecha del reporte')) meta.fechaReporte = metaVal;
+          if (colA.includes('ficha de caracterizaci')) meta.numeroFicha = metaVal;
+          if (colA.includes('cógigo') || colA.includes('código')) meta.codigoPrograma = metaVal;
+          if (colA.includes('versión') || colA.includes('version')) meta.version = metaVal;
+          if (colA.includes('denominación') || colA.includes('denominacion')) meta.denominacion = metaVal;
+          if (colA.includes('estado de la ficha')) meta.estadoFicha = metaVal;
+          if (colA.includes('fecha inicio')) meta.fechaInicio = metaVal;
+          if (colA.includes('fecha fin')) meta.fechaFin = metaVal;
+          if (colA.includes('modalidad de formación')) meta.modalidad = metaVal;
+          if (colA.includes('regional')) meta.regional = metaVal;
+          if (colA.includes('centro de formación')) meta.centro = metaVal;
 
           // Detección dinámica de fila de encabezados
           const rowStr = row.map(c => 
             String(c || '').toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").trim()
           ).join(' ');
 
-          if (rowStr.includes('tipo de documento') || rowStr.includes('numero de documento') || rowStr.includes('juicio de evaluacion')) {
+          if (rowStr.includes('tipo de documento') || (rowStr.includes('documento') && rowStr.includes('juicio'))) {
             headerRowIndex = r;
+            break;
           }
         }
 

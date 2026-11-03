@@ -238,13 +238,14 @@ export default function App() {
     if (!previewParsedData || !currentFicha) return;
 
     // Si el backend Spring Boot está conectado, sincronizar archivo en PostgreSQL
-    if (backendStatus.online && lastUploadedFile && currentFicha.backendId) {
+    const fichaTargetId = currentFicha.backendId || currentFicha.id;
+    if (backendStatus.online && lastUploadedFile && fichaTargetId) {
       try {
-        const uploadResult = await uploadJuiciosExcelApi(currentFicha.backendId, lastUploadedFile);
+        const uploadResult = await uploadJuiciosExcelApi(fichaTargetId, lastUploadedFile);
         showToast(`Backend: ${uploadResult.mensaje} (${uploadResult.aprendicesUnicos} aprendices únicos en PostgreSQL).`);
         
         // Recargar detalle fresco desde backend
-        const detail = await fetchFichaDetailApi(currentFicha.numero || currentFicha.backendId);
+        const detail = await fetchFichaDetailApi(currentFicha.numero || fichaTargetId);
         setFichas(prev => prev.map(item => {
           if (item.id === currentFicha.id) {
             return {
@@ -273,12 +274,17 @@ export default function App() {
     let aprendicesNuevos = 0;
     let aprendicesActualizados = 0;
 
+    const MOCK_DOCS_SET = new Set(['1075254123', '1075345678', '1075987654', '1080123456', '1081654321']);
+
     const updatedFichas = fichas.map(f => {
       if (f.id === currentFicha.id) {
         const learnersMap = new Map();
         
         (f.aprendices || []).forEach(apr => {
-          learnersMap.set(apr.numDoc, { ...apr, raps: [...(apr.raps || [])] });
+          const doc = String(apr.numDoc || '').trim();
+          if (!MOCK_DOCS_SET.has(doc)) {
+            learnersMap.set(doc, { ...apr, raps: [...(apr.raps || [])] });
+          }
         });
 
         parsed.aprendices.forEach(inApr => {
