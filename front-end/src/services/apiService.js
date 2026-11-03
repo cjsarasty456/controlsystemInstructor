@@ -83,3 +83,47 @@ export const fetchEvaluacionesApi = async (fichaId) => {
   if (!res.ok) throw new Error(`Error ${res.status} al consultar evaluaciones.`);
   return await res.json();
 };
+
+// ==========================================
+// Copias de Seguridad (Backup y Restauración)
+// ==========================================
+
+export const BACKUP_EXPORT_JSON_URL = `${API_BASE_URL}/backup/export`;
+export const BACKUP_EXPORT_SQL_URL = `${API_BASE_URL}/backup/export/sql`;
+
+export const fetchServerBackupsApi = async () => {
+  const res = await fetch(`${API_BASE_URL}/backup/list`, { method: 'GET' });
+  if (!res.ok) throw new Error(`Error ${res.status} al listar copias de seguridad del servidor.`);
+  return await res.json();
+};
+
+export const restoreServerBackupApi = async (fileName) => {
+  const res = await fetch(`${API_BASE_URL}/backup/restore-server`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ fileName })
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${res.status} al restaurar copia de seguridad.`);
+  }
+  return await res.json();
+};
+
+export const importBackupFileApi = async (file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const res = await fetch(`${API_BASE_URL}/backup/import`, {
+    method: 'POST',
+    body: formData
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `Error ${res.status} al importar copia de seguridad.`);
+  }
+  return await res.json();
+};
+
+

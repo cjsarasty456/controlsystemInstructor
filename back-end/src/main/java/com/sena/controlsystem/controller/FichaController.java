@@ -54,3 +54,4 @@ public class FichaController {
         return ResponseEntity.ok(Map.of("mensaje", "Reporte de proyecto formativo actualizado.", "fichaId", updated.getId()));
     }
 }
+

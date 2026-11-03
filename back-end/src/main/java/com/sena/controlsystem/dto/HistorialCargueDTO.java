@@ -52,3 +52,4 @@ public class HistorialCargueDTO {
     public String getHashSha256() { return hashSha256; }
     public void setHashSha256(String hashSha256) { this.hashSha256 = hashSha256; }
 }
+

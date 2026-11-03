@@ -28,3 +28,4 @@ public class ReglamentoController {
         return ResponseEntity.ok(reglamentoService.registrarEvaluacion(request));
     }
 }
+

@@ -59,3 +59,4 @@ public class AprendizDTO {
     public List<JuicioItemDTO> getRaps() { return raps; }
     public void setRaps(List<JuicioItemDTO> raps) { this.raps = raps; }
 }
+

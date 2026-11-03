@@ -91,3 +91,4 @@ public class EvaluacionReglamentoEntity {
     public LocalDateTime getCreadoEn() { return creadoEn; }
     public void setCreadoEn(LocalDateTime creadoEn) { this.creadoEn = creadoEn; }
 }
+

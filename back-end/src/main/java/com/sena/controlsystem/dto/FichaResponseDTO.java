@@ -92,3 +92,4 @@ public class FichaResponseDTO {
     public List<HistorialCargueDTO> getReportes() { return reportes; }
     public void setReportes(List<HistorialCargueDTO> reportes) { this.reportes = reportes; }
 }
+

@@ -11,3 +11,4 @@ public interface EvaluacionReglamentoRepository extends JpaRepository<Evaluacion
     List<EvaluacionReglamentoEntity> findByFichaIdOrderByFechaEvaluacionDesc(Long fichaId);
     List<EvaluacionReglamentoEntity> findByAprendizIdOrderByFechaEvaluacionDesc(Long aprendizId);
 }
+

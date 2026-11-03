@@ -14,3 +14,4 @@ public interface AprendizRepository extends JpaRepository<AprendizEntity, Long> 
     long countByFichaId(Long fichaId);
     long countByFichaIdAndEstadoSenaContainingIgnoreCase(Long fichaId, String estado);
 }
+

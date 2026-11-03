@@ -10,3 +10,4 @@ public class ControlSystemApplication {
         SpringApplication.run(ControlSystemApplication.class, args);
     }
 }
+

@@ -11,3 +11,4 @@ public interface FichaRepository extends JpaRepository<FichaEntity, Long> {
     Optional<FichaEntity> findByNumeroFicha(String numeroFicha);
     boolean existsByNumeroFicha(String numeroFicha);
 }
+

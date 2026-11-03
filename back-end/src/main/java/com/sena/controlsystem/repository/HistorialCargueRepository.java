@@ -11,3 +11,4 @@ public interface HistorialCargueRepository extends JpaRepository<HistorialCargue
     List<HistorialCargueEntity> findByFichaIdOrderByConsecutivoCargueDesc(Long fichaId);
     Integer countByFichaId(Long fichaId);
 }
+

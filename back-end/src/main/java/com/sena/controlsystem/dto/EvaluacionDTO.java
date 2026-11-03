@@ -62,3 +62,4 @@ public class EvaluacionDTO {
     public String getInstructorResponsable() { return instructorResponsable; }
     public void setInstructorResponsable(String instructorResponsable) { this.instructorResponsable = instructorResponsable; }
 }
+

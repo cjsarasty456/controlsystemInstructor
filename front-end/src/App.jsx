@@ -4,6 +4,7 @@ import FichaDetailView from './components/FichaDetailView';
 import AsistenteView from './components/AsistenteView';
 import FichaModal from './components/FichaModal';
 import PreviewReportModal from './components/PreviewReportModal';
+import BackupModal from './components/BackupModal';
 import { loadFichas, saveFichas } from './services/storage';
 import { parseSenaExcelReport } from './services/excelParser';
 import { 
@@ -21,6 +22,7 @@ export default function App() {
   const [currentFichaId, setCurrentFichaId] = useState(null);
   const [activeNav, setActiveNav] = useState('fichas');
   const [isFichaModalOpen, setIsFichaModalOpen] = useState(false);
+  const [isBackupModalOpen, setIsBackupModalOpen] = useState(false);
   const [previewParsedData, setPreviewParsedData] = useState(null);
   const [toastMessage, setToastMessage] = useState('');
   const [backendStatus, setBackendStatus] = useState({ online: false, info: null });
@@ -85,6 +87,11 @@ export default function App() {
   const showToast = (msg) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 4500);
+  };
+
+  const handleBackupRestoreSuccess = async (msg) => {
+    showToast(msg || 'Copia de seguridad restaurada exitosamente.');
+    await syncWithBackend();
   };
 
   const currentFicha = fichas.find(f => f.id === currentFichaId);
@@ -375,7 +382,30 @@ export default function App() {
               <span className="subtext">SENA — CIES Regional Huila | Centro de Control Académico</span>
             </div>
           </div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.85rem', flexWrap: 'wrap' }}>
+            {/* Botón de Copia de Seguridad */}
+            <button 
+              className="btn btn-secondary" 
+              style={{ 
+                display: 'flex', 
+                alignItems: 'center', 
+                gap: '0.45rem', 
+                padding: '0.4rem 0.85rem', 
+                fontSize: '0.82rem', 
+                background: '#ffffff', 
+                color: '#00324D', 
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                fontWeight: '600'
+              }}
+              onClick={() => setIsBackupModalOpen(true)}
+              title="Copias de Seguridad (Exportar / Importar / Respaldos en Servidor)"
+            >
+              <i className="ph ph-database" style={{ fontSize: '1.1rem', color: '#39A900' }}></i>
+              <span>Copia de Seguridad</span>
+            </button>
+
             {/* Indicador de Estado del Backend Spring Boot */}
             <div 
               style={{ 
@@ -467,6 +497,14 @@ export default function App() {
         parsedData={previewParsedData}
         onClose={() => setPreviewParsedData(null)}
         onConfirm={handleConfirmImport}
+      />
+
+      <BackupModal 
+        isOpen={isBackupModalOpen}
+        onClose={() => setIsBackupModalOpen(false)}
+        onRestoreSuccess={handleBackupRestoreSuccess}
+        fichas={fichas}
+        isBackendOnline={backendStatus.online}
       />
 
       {/* Toast Notification */}

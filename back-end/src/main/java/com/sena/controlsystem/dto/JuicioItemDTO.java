@@ -48,3 +48,4 @@ public class JuicioItemDTO {
     public String getFuncionario() { return funcionario; }
     public void setFuncionario(String funcionario) { this.funcionario = funcionario; }
 }
+

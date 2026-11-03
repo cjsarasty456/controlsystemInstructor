@@ -83,3 +83,4 @@ public class AprendizEntity {
     public LocalDateTime getActualizadoEn() { return actualizadoEn; }
     public void setActualizadoEn(LocalDateTime actualizadoEn) { this.actualizadoEn = actualizadoEn; }
 }
+

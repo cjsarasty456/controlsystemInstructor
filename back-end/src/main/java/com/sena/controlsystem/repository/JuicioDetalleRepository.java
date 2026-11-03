@@ -20,3 +20,4 @@ public interface JuicioDetalleRepository extends JpaRepository<JuicioDetalleEnti
 
     long countByFichaIdAndJuicioEvaluacion(Long fichaId, String juicioEvaluacion);
 }
+
