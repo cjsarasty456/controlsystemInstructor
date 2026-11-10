@@ -1,28 +1,25 @@
 package com.sena.controlsystem.controller;
 
+import com.sena.controlsystem.dto.FichaCreateDTO;
 import com.sena.controlsystem.dto.FichaResponseDTO;
 import com.sena.controlsystem.entity.FichaEntity;
-import com.sena.controlsystem.repository.FichaRepository;
 import com.sena.controlsystem.service.FichaService;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/fichas")
-@CrossOrigin(origins = "*")
 public class FichaController {
 
     private final FichaService fichaService;
-    private final FichaRepository fichaRepository;
 
-    public FichaController(FichaService fichaService, FichaRepository fichaRepository) {
+    public FichaController(FichaService fichaService) {
         this.fichaService = fichaService;
-        this.fichaRepository = fichaRepository;
     }
 
     @GetMapping
@@ -38,11 +35,9 @@ public class FichaController {
     }
 
     @PostMapping
-    public ResponseEntity<FichaEntity> createFicha(@RequestBody FichaEntity ficha) {
-        ficha.setCreadoEn(LocalDateTime.now());
-        ficha.setActualizadoEn(LocalDateTime.now());
-        FichaEntity saved = fichaRepository.save(ficha);
-        return ResponseEntity.ok(saved);
+    public ResponseEntity<FichaResponseDTO> createFicha(@RequestBody FichaCreateDTO fichaDTO) {
+        FichaResponseDTO saved = fichaService.createFicha(fichaDTO);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
     @PutMapping("/{fichaId}/proyecto")

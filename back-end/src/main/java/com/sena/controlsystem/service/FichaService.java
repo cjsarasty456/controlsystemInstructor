@@ -203,4 +203,24 @@ public class FichaService {
 
         return dto;
     }
+
+    @Transactional
+    public FichaResponseDTO createFicha(com.sena.controlsystem.dto.FichaCreateDTO createDTO) {
+        FichaEntity ficha = new FichaEntity();
+        ficha.setNumeroFicha(createDTO.getNumeroFicha());
+        ficha.setProgramaNombre(createDTO.getProgramaNombre());
+        ficha.setProgramaCodigo(createDTO.getProgramaCodigo() != null ? createDTO.getProgramaCodigo() : "228118");
+        ficha.setProgramaVersion(createDTO.getProgramaVersion() != null ? createDTO.getProgramaVersion() : "1");
+        ficha.setJornada(createDTO.getJornada());
+        ficha.setFechaInicio(createDTO.getFechaInicio());
+        ficha.setFechaFin(createDTO.getFechaFin());
+        ficha.setSedeCentro(createDTO.getSedeCentro() != null ? createDTO.getSedeCentro() : "9527 - CENTRO DE LA INDUSTRIA, LA EMPRESA Y LOS SERVICIOS");
+        ficha.setRegional(createDTO.getRegional() != null ? createDTO.getRegional() : "41 - REGIONAL HUILA");
+        ficha.setEstado("EN EJECUCION");
+        ficha.setCreadoEn(java.time.LocalDateTime.now());
+        ficha.setActualizadoEn(java.time.LocalDateTime.now());
+
+        FichaEntity saved = fichaRepository.save(ficha);
+        return mapToSummaryDTO(saved);
+    }
 }
