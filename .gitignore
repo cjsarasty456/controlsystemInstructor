@@ -1,67 +1,51 @@
-# === Credenciales y secretos ===
+# Sistema de Control de Instructores SENA - Reglas Anti-Leaks y Entornos
+
+# Ambientes y Secretos
 .env
 .env.*
-*.env
-.env.local
-.env.production
-credentials.json
-secrets.json
+!.env.example
 *.pem
 *.key
-*.p12
-*.pfx
-*.jks
-keystore.properties
-application-local.properties
-application-local.yml
+secrets.*
+*.credentials
+credentials.json
+*.id_rsa
+*.id_ed25519
 
-# === Node.js ===
+# Backups y volcados SQL
+*.dump
+*.tar
+*.bak
+*.sql.gz
+
+# Dependencias y compilados Backend (Java/Maven)
+back-end/target/
+target/
+*.class
+.mvn/
+!.mvn/wrapper
+
+# Dependencias y compilados Frontend (Node/React/Vite)
 node_modules/
+dist/
+dist-ssr/
+*.local
+
+# Logs y procesos
+logs/
+*.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-package-lock.json
-yarn.lock
-dist/
-build/
-.cache/
 
-# === Java / Maven / Gradle ===
-target/
-*.class
-*.jar
-*.war
-*.ear
-*.log
-.mvn/wrapper/maven-wrapper.jar
-.gradle/
-build/
-out/
+# Cobertura y reportes
+coverage/
+.nyc_output/
 
-# === IDEs ===
+# IDEs y SO
 .idea/
 .vscode/
 *.swp
 *.swo
-*~
-.project
-.classpath
-.settings/
-*.iml
-.factorypath
-nbproject/
-
-# === Sistema operativo ===
 .DS_Store
 Thumbs.db
-desktop.ini
-*.tmp
-*.bak
-
-# === Logs ===
-*.log
-logs/
-
-# === Archivos temporales ===
-tmp/
-temp/

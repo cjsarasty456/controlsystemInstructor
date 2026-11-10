@@ -1,0 +1,64 @@
+openapi: 3.0.3
+info:
+  title: Sistema de Control de Instructores SENA - API Contract
+  version: 1.1.0
+  description: Contrato de servicios REST para gestión de fichas, juicios y auditoría.
+paths:
+  /api/fichas:
+    get:
+      summary: Listar todas las fichas
+      responses:
+        '200':
+          description: Lista obtenida exitosamente
+    post:
+      summary: Crear ficha formativa con DTO validado
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FichaCreateDTO'
+      responses:
+        '201':
+          description: Ficha creada exitosamente
+        '400':
+          description: Datos inválidos
+  /api/health:
+    get:
+      summary: Health check del servicio
+      responses:
+        '200':
+          description: Servicio operativo
+components:
+  schemas:
+    FichaCreateDTO:
+      type: object
+      required:
+        - numeroFicha
+        - programaNombre
+        - jornada
+        - fechaInicio
+      properties:
+        numeroFicha:
+          type: string
+          example: "3145556"
+        programaNombre:
+          type: string
+          example: "ANALISIS Y DESARROLLO DE SOFTWARE"
+        programaCodigo:
+          type: string
+          example: "228118"
+        programaVersion:
+          type: string
+          example: "1"
+        jornada:
+          type: string
+          example: "PRESENCIAL"
+        fechaInicio:
+          type: string
+          format: date
+          example: "2024-04-15"
+        fechaFin:
+          type: string
+          format: date
+          example: "2026-04-15"
